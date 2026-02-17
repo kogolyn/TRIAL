@@ -1,9 +1,22 @@
-import { useState } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+
+// Teammate's pages
 import EmergencyRequest from "./pages/EmergencyRequest";
-import LoginForm from './components/LoginForm';
-import RegisterForm from './components/RegisterForm';
-import logo from './assets/logo.png';
+import LoginForm        from './components/LoginForm';
+import RegisterForm     from './components/RegisterForm';
+import logo             from './assets/logo.png';
+
+// Dashboard layout + pages
+import Layout         from "./components/Layout";
+import Overview       from "./pages/Overview";
+import IncomingAlerts from "./pages/IncomingAlerts";
+import ActivePatients from "./pages/ActivePatients";
+import Staff          from "./pages/Staff";
+import BedsResources  from "./pages/BedsResources";
+import Referrals      from "./pages/Referrals";
+
+// ── TEAMMATE'S PAGES (unchanged) ─────────────────────────────────────────────
 
 function LandingPage() {
   const navigate = useNavigate();
@@ -59,12 +72,39 @@ function LoginPage() {
   );
 }
 
+// ── DASHBOARD (wrapped in Layout) ────────────────────────────────────────────
+
+function DashboardRoutes() {
+  return (
+    <Layout>
+      <Routes>
+        <Route path="/"          element={<Overview />}       />
+        <Route path="/alerts"    element={<IncomingAlerts />} />
+        <Route path="/patients"  element={<ActivePatients />} />
+        <Route path="/staff"     element={<Staff />}          />
+        <Route path="/beds"      element={<BedsResources />}  />
+        <Route path="/referrals" element={<Referrals />}      />
+        <Route path="*"          element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </Layout>
+  );
+}
+
+// ── ROOT APP ─────────────────────────────────────────────────────────────────
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
+        {/* Teammate's auth flow */}
+        <Route path="/"      element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />}   />
+
+        {/* All dashboard pages live under /dashboard/* */}
+        <Route path="/dashboard/*" element={<DashboardRoutes />} />
+
+        {/* Catch-all → back to landing */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
