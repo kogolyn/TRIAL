@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import EmergencyConfirm from "./EmergencyConfirm";
 import ambulanceImg from "../assets/ambulanceimage.jpg";
 import logoImg from "../assets/logo.png";
+import Navbar from "../components/Navbar";   {/* ✅ FIXED: was ".components/Navbar" */}
 
 function EmergencyRequest() {
   const [location, setLocation] = useState(null);
@@ -52,8 +53,12 @@ function EmergencyRequest() {
 
   return (
     <div style={styles.container}>
+
+      {/* NAVBAR */}
+      <Navbar />
+
       {/* HEADER WITH AMBULANCE BACKGROUND */}
-      <div style={styles.header}>
+      <div style={{ ...styles.header, marginTop: "65px" }}>
         <div style={styles.headerOverlay}></div>
 
         <div style={styles.headerContent}>
@@ -89,18 +94,14 @@ function EmergencyRequest() {
       <div style={styles.infoCards}>
         {/* Status Card - Green */}
         <div style={{ ...styles.infoCard, background: "linear-gradient(135deg, #d4f4dd 0%, #a7f3d0 100%)" }}>
-          <div style={styles.cardIconWrapper}>
-            ⏱
-          </div>
+          <div style={styles.cardIconWrapper}>⏱</div>
           <div style={{ ...styles.cardLabel, color: "#065f46" }}>STATUS</div>
           <div style={{ ...styles.cardValue, color: "#064e3b" }}>{status}</div>
         </div>
 
         {/* Location Card - Blue */}
         <div style={{ ...styles.infoCard, background: "linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%)" }}>
-          <div style={styles.cardIconWrapper}>
-            📍
-          </div>
+          <div style={styles.cardIconWrapper}>📍</div>
           <div style={{ ...styles.cardLabel, color: "#1e3a8a" }}>YOUR LOCATION</div>
           <div style={{ ...styles.cardValue, color: "#1e40af" }}>{location || "Detecting..."}</div>
         </div>
@@ -119,7 +120,6 @@ function EmergencyRequest() {
           0% { transform: scale(1); opacity: 1; }
           100% { transform: scale(1.8); opacity: 0; }
         }
-
         @keyframes float {
           0%,100% { transform: translateY(0); }
           50% { transform: translateY(-10px); }
@@ -137,8 +137,6 @@ const styles = {
     background: "#E8F5E9",
   },
 
-
-  /* HEADER */
   header: {
     borderRadius: "20px",
     overflow: "hidden",
@@ -163,9 +161,7 @@ const styles = {
     zIndex: 2,
   },
 
-  logo: {
-    height: "350px",
-  },
+  logo: { height: "350px" },
 
   subtitle: {
     color: "#fff",
@@ -174,7 +170,6 @@ const styles = {
     marginTop: "10px",
   },
 
-  /* BUTTON */
   buttonWrapper: {
     position: "relative",
     display: "flex",
@@ -219,17 +214,9 @@ const styles = {
     animation: "float 3s infinite",
   },
 
-  buttonTextPrimary: {
-    fontSize: "22px",
-    fontWeight: "700",
-  },
+  buttonTextPrimary: { fontSize: "22px", fontWeight: "700" },
+  buttonTextSecondary: { fontSize: "14px", opacity: 0.9 },
 
-  buttonTextSecondary: {
-    fontSize: "14px",
-    opacity: 0.9,
-  },
-
-  /* INFO CARDS */
   infoCards: {
     display: "flex",
     gap: "15px",
@@ -268,15 +255,9 @@ const styles = {
     textTransform: "uppercase",
   },
 
-  cardValue: {
-    fontSize: "18px",
-    fontWeight: "800",
-  },
+  cardValue: { fontSize: "18px", fontWeight: "800" },
 
-  /* FOOTER */
-  bottomInfo: {
-    textAlign: "center",
-  },
+  bottomInfo: { textAlign: "center" },
 
   infoItem: {
     background: "linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)",
