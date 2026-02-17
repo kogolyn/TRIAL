@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-function Navbar() {
+function Navbar({ onProceed }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -20,8 +20,8 @@ function Navbar() {
 
       {/* Auth Buttons */}
       <div style={styles.authButtons}>
-        <button style={styles.loginBtn}>Login</button>
-        <button style={styles.registerBtn}>Register</button>
+        <button style={styles.loginBtn} onClick={onProceed}>Login</button>
+        <button style={styles.registerBtn} onClick={onProceed}>Register</button>
       </div>
     </nav>
   );
@@ -41,28 +41,19 @@ const styles = {
     backgroundColor: "#ffffff",
     boxShadow: "0 2px 12px rgba(0,0,0,0.1)",
   },
-
   brand: {
     fontSize: "22px",
     fontWeight: "900",
     fontFamily: "Segoe UI, sans-serif",
     letterSpacing: "1px",
   },
-
-  brandRed: {
-    color: "#FF3B30",
-  },
-
-  brandBlack: {
-    color: "#111",
-  },
-
+  brandRed: { color: "#FF3B30" },
+  brandBlack: { color: "#111" },
   navLinks: {
     display: "flex",
     gap: "28px",
     alignItems: "center",
   },
-
   navLink: {
     textDecoration: "none",
     color: "#444",
@@ -71,13 +62,11 @@ const styles = {
     fontFamily: "Segoe UI, sans-serif",
     transition: "color 0.2s",
   },
-
   authButtons: {
     display: "flex",
     gap: "12px",
     alignItems: "center",
   },
-
   loginBtn: {
     padding: "10px 24px",
     borderRadius: "10px",
@@ -90,7 +79,6 @@ const styles = {
     fontFamily: "Segoe UI, sans-serif",
     transition: "all 0.2s ease",
   },
-
   registerBtn: {
     padding: "10px 24px",
     borderRadius: "10px",

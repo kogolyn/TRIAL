@@ -2,15 +2,14 @@ import { useEffect, useState } from "react";
 import EmergencyConfirm from "./EmergencyConfirm";
 import ambulanceImg from "../assets/ambulanceimage.jpg";
 import logoImg from "../assets/logo.png";
-import Navbar from "../components/Navbar";   {/* ✅ FIXED: was ".components/Navbar" */}
+import Navbar from "../components/Navbar";
 
-function EmergencyRequest() {
+function EmergencyRequest({ onProceed }) {
   const [location, setLocation] = useState(null);
   const [status, setStatus] = useState("Idle");
   const [showConfirmPage, setShowConfirmPage] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
 
-  // Get location name
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -22,7 +21,6 @@ function EmergencyRequest() {
             );
             const data = await res.json();
             const address = data.address || {};
-
             const area =
               address.suburb ||
               address.neighbourhood ||
@@ -30,7 +28,6 @@ function EmergencyRequest() {
               address.town ||
               address.city ||
               "Unknown area";
-
             setLocation(area);
           } catch {
             setLocation("Unknown area");
@@ -41,7 +38,6 @@ function EmergencyRequest() {
     }
   }, []);
 
-  // Simulated status
   useEffect(() => {
     const timer = setTimeout(() => setStatus("Enroute"), 5000);
     return () => clearTimeout(timer);
@@ -52,74 +48,69 @@ function EmergencyRequest() {
   }
 
   return (
-    <div style={styles.container}>
+    <div className="min-h-screen p-5 font-sans bg-green-50">
 
-      {/* NAVBAR */}
-      <Navbar />
+      <Navbar onProceed={onProceed} />
 
       {/* HEADER WITH AMBULANCE BACKGROUND */}
-      <div style={{ ...styles.header, marginTop: "65px" }}>
-        <div style={styles.headerOverlay}></div>
-
-        <div style={styles.headerContent}>
-          <img src={logoImg} alt="UzimaNode Logo" style={styles.logo} />
-          <p style={styles.subtitle}>Fast Reliable Lifesaving</p>
+      <div
+        className="rounded-2xl overflow-hidden mb-8 relative text-center mt-16"
+        style={{
+          backgroundImage: `url(${ambulanceImg})`,
+          backgroundSize: "contain",
+          backgroundPosition: "center",
+          backgroundColor: "#000",
+          padding: "100px 20px",
+        }}
+      >
+        <div className="absolute inset-0 bg-black/50"></div>
+        <div className="relative z-10">
+          <img src={logoImg} alt="UzimaNode Logo" className="h-72 mx-auto" />
+          <p className="text-white text-xl font-semibold mt-3">Fast Reliable Lifesaving</p>
         </div>
       </div>
 
       {/* EMERGENCY BUTTON */}
-      <div style={styles.buttonWrapper}>
-        <div style={styles.pulseRing}></div>
-        <div style={styles.pulseRing2}></div>
-
+      <div className="relative flex justify-center mb-8">
+        <div className="absolute w-48 h-48 border-4 border-red-500 rounded-full animate-ping opacity-75"></div>
+        <div className="absolute w-48 h-48 border-4 border-red-500 rounded-full animate-ping opacity-75" style={{ animationDelay: "1s" }}></div>
         <button
-          style={{
-            ...styles.emergencyButton,
-            transform: isHovering ? "scale(1.05)" : "scale(1)",
-          }}
+          className={`relative z-10 bg-red-500 text-white rounded-3xl p-10 border-none cursor-pointer w-full max-w-sm transition-transform duration-200 ${isHovering ? "scale-105" : "scale-100"}`}
           onClick={() => setShowConfirmPage(true)}
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
         >
-          <div style={styles.iconContainer}>🚨</div>
-
-          <div style={styles.buttonTextPrimary}>REQUEST HELP NOW</div>
-          <div style={styles.buttonTextSecondary}>
-            ⚡ ~4 min response time
-          </div>
+          <div className="text-5xl mb-2">🚨</div>
+          <div className="text-2xl font-bold">REQUEST HELP NOW</div>
+          <div className="text-sm opacity-90 mt-1">⚡ ~4 min response time</div>
         </button>
       </div>
 
       {/* INFO CARDS */}
-      <div style={styles.infoCards}>
-        {/* Status Card - Green */}
-        <div style={{ ...styles.infoCard, background: "linear-gradient(135deg, #d4f4dd 0%, #a7f3d0 100%)" }}>
-          <div style={styles.cardIconWrapper}>⏱</div>
-          <div style={{ ...styles.cardLabel, color: "#065f46" }}>STATUS</div>
-          <div style={{ ...styles.cardValue, color: "#064e3b" }}>{status}</div>
+      <div className="flex gap-4 max-w-lg mx-auto mb-8">
+        {/* Status Card */}
+        <div className="flex-1 rounded-2xl p-6 text-center shadow-lg border-2 border-white/60 bg-gradient-to-br from-green-100 to-green-200">
+          <div className="w-14 h-14 mx-auto mb-3 rounded-2xl flex items-center justify-center text-2xl bg-white/90 shadow-md">⏱</div>
+          <div className="text-xs font-bold tracking-wider uppercase text-emerald-800 mb-1">STATUS</div>
+          <div className="text-lg font-extrabold text-emerald-900">{status}</div>
         </div>
 
-        {/* Location Card - Blue */}
-        <div style={{ ...styles.infoCard, background: "linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%)" }}>
-          <div style={styles.cardIconWrapper}>📍</div>
-          <div style={{ ...styles.cardLabel, color: "#1e3a8a" }}>YOUR LOCATION</div>
-          <div style={{ ...styles.cardValue, color: "#1e40af" }}>{location || "Detecting..."}</div>
+        {/* Location Card */}
+        <div className="flex-1 rounded-2xl p-6 text-center shadow-lg border-2 border-white/60 bg-gradient-to-br from-blue-100 to-blue-300">
+          <div className="w-14 h-14 mx-auto mb-3 rounded-2xl flex items-center justify-center text-2xl bg-white/90 shadow-md">📍</div>
+          <div className="text-xs font-bold tracking-wider uppercase text-blue-900 mb-1">YOUR LOCATION</div>
+          <div className="text-lg font-extrabold text-blue-800">{location || "Detecting..."}</div>
         </div>
       </div>
 
       {/* FOOTER */}
-      <div style={styles.bottomInfo}>
-        <div style={styles.infoItem}>
-          <span style={styles.infoText}>24/7 Emergency Support</span>
+      <div className="text-center">
+        <div className="inline-block bg-gradient-to-r from-white to-slate-100 px-6 py-3 rounded-2xl shadow-md">
+          <span className="text-sm text-slate-500 font-extrabold">24/7 Emergency Support</span>
         </div>
       </div>
 
-      {/* ANIMATIONS */}
       <style>{`
-        @keyframes pulse {
-          0% { transform: scale(1); opacity: 1; }
-          100% { transform: scale(1.8); opacity: 0; }
-        }
         @keyframes float {
           0%,100% { transform: translateY(0); }
           50% { transform: translateY(-10px); }
@@ -128,150 +119,5 @@ function EmergencyRequest() {
     </div>
   );
 }
-
-const styles = {
-  container: {
-    minHeight: "100vh",
-    padding: "20px",
-    fontFamily: "Segoe UI, sans-serif",
-    background: "#E8F5E9",
-  },
-
-  header: {
-    borderRadius: "20px",
-    overflow: "hidden",
-    marginBottom: "30px",
-    position: "relative",
-    backgroundImage: `url(${ambulanceImg})`,
-    backgroundSize: "contain",
-    backgroundPosition: "center",
-    backgroundColor: "#000",
-    padding: "100px 20px",
-    textAlign: "center",
-  },
-
-  headerOverlay: {
-    position: "absolute",
-    inset: 0,
-    background: "rgba(0,0,0,0.5)",
-  },
-
-  headerContent: {
-    position: "relative",
-    zIndex: 2,
-  },
-
-  logo: { height: "350px" },
-
-  subtitle: {
-    color: "#fff",
-    fontSize: "20px",
-    fontWeight: "600",
-    marginTop: "10px",
-  },
-
-  buttonWrapper: {
-    position: "relative",
-    display: "flex",
-    justifyContent: "center",
-    marginBottom: "30px",
-  },
-
-  pulseRing: {
-    position: "absolute",
-    width: "200px",
-    height: "200px",
-    border: "3px solid #FF3B30",
-    borderRadius: "50%",
-    animation: "pulse 2s infinite",
-  },
-
-  pulseRing2: {
-    position: "absolute",
-    width: "200px",
-    height: "200px",
-    border: "3px solid #FF3B30",
-    borderRadius: "50%",
-    animation: "pulse 2s infinite 1s",
-  },
-
-  emergencyButton: {
-    backgroundColor: "#FF3B30",
-    color: "#fff",
-    borderRadius: "24px",
-    padding: "40px",
-    border: "none",
-    cursor: "pointer",
-    zIndex: 2,
-    width: "100%",
-    maxWidth: "400px",
-    transition: "transform 0.2s ease",
-  },
-
-  iconContainer: {
-    fontSize: "50px",
-    marginBottom: "10px",
-    animation: "float 3s infinite",
-  },
-
-  buttonTextPrimary: { fontSize: "22px", fontWeight: "700" },
-  buttonTextSecondary: { fontSize: "14px", opacity: 0.9 },
-
-  infoCards: {
-    display: "flex",
-    gap: "15px",
-    maxWidth: "500px",
-    margin: "0 auto 30px",
-  },
-
-  infoCard: {
-    flex: 1,
-    borderRadius: "18px",
-    padding: "24px 20px",
-    textAlign: "center",
-    boxShadow: "0 6px 20px rgba(0, 0, 0, 0.12)",
-    border: "2px solid rgba(255, 255, 255, 0.6)",
-    transition: "transform 0.2s ease",
-  },
-
-  cardIconWrapper: {
-    width: "55px",
-    height: "55px",
-    margin: "0 auto 12px",
-    borderRadius: "16px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "26px",
-    background: "rgba(255, 255, 255, 0.9)",
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.12)",
-  },
-
-  cardLabel: {
-    fontSize: "11px",
-    fontWeight: "700",
-    letterSpacing: "0.8px",
-    marginBottom: "6px",
-    textTransform: "uppercase",
-  },
-
-  cardValue: { fontSize: "18px", fontWeight: "800" },
-
-  bottomInfo: { textAlign: "center" },
-
-  infoItem: {
-    background: "linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)",
-    padding: "14px 22px",
-    borderRadius: "20px",
-    display: "inline-block",
-    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
-  },
-
-  infoText: {
-    fontSize: "13px",
-    color: "#475569",
-    fontWeight: "800",
-  },
-};
 
 export default EmergencyRequest;

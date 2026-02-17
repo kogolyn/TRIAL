@@ -22,113 +22,105 @@ function EmergencyConfirm({ onCancel }) {
 
   if (isConfirmed) {
     return (
-      <div style={styles.fullScreen}>
-        <div style={styles.successCard}>
-          {/* Animated Icon Circle */}
-          <div style={styles.iconCircle}>
-            <div style={styles.pulseCircle}></div>
-            <div style={styles.ambulanceIcon}>🚑</div>
+      <div className="min-h-screen flex justify-center items-center bg-green-50 p-5 text-center">
+        <div className="bg-white px-10 py-14 rounded-3xl shadow-2xl max-w-lg w-full border-4 border-green-500">
+
+          {/* Animated Icon */}
+          <div className="relative w-28 h-28 mx-auto mb-6">
+            <div className="absolute inset-0 rounded-full border-4 border-green-500 animate-ping opacity-75"></div>
+            <div className="relative flex items-center justify-center h-full text-6xl">🚑</div>
           </div>
 
-          <h2 style={styles.successTitle}>HELP IS ON THE WAY</h2>
+          <h2 className="text-4xl font-black mb-5 text-gray-900 tracking-wide">HELP IS ON THE WAY</h2>
 
-          <span style={styles.statusBadge}>
-            <span style={styles.statusDot}></span>
+          <span className="inline-flex items-center gap-2 bg-green-500 text-white px-7 py-3 rounded-full text-lg font-black mb-6 tracking-widest shadow-lg">
+            <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse"></span>
             EN ROUTE
           </span>
 
-          <p style={styles.successText}>
+          <p className="text-lg text-gray-500 mb-8 leading-relaxed font-medium">
             Emergency services have received your alert and are heading to your location.
           </p>
 
-          <div style={styles.etaBox}>
-            <div style={styles.etaIcon}>⏱</div>
+          {/* ETA Box */}
+          <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl mb-8 flex items-center gap-4 border-2 border-green-200 text-left">
+            <span className="text-4xl">⏱</span>
             <div>
-              <div style={styles.etaLabel}>Estimated Arrival</div>
-              <div style={styles.etaTime}>4 minutes</div>
+              <div className="text-sm text-gray-500 mb-1">Estimated Arrival</div>
+              <div className="text-2xl font-black text-green-600">4 minutes</div>
             </div>
           </div>
 
-          <div style={styles.infoGrid}>
-            <div style={styles.infoItem}>
-              <span style={styles.infoIcon}>📍</span>
-              <span style={styles.infoText}>Location Confirmed</span>
+          {/* Info Grid */}
+          <div className="grid grid-cols-2 gap-3 mb-8">
+            <div className="bg-gray-50 p-4 rounded-xl flex items-center gap-2 text-sm font-semibold text-gray-500">
+              <span className="text-xl">📍</span> Location Confirmed
             </div>
-            <div style={styles.infoItem}>
-              <span style={styles.infoIcon}>📞</span>
-              <span style={styles.infoText}>Stay Available</span>
+            <div className="bg-gray-50 p-4 rounded-xl flex items-center gap-2 text-sm font-semibold text-gray-500">
+              <span className="text-xl">📞</span> Stay Available
             </div>
           </div>
 
-          <button style={styles.resetButton} onClick={handleReset}>
+          <button
+            className="bg-none border-none text-green-500 cursor-pointer text-base font-semibold underline"
+            onClick={handleReset}
+          >
             Report another incident
           </button>
         </div>
-
-        {/* Animations */}
-        <style>{`
-          @keyframes pulse-ring {
-            0% {
-              transform: scale(1);
-              opacity: 0.8;
-            }
-            100% {
-              transform: scale(1.5);
-              opacity: 0;
-            }
-          }
-
-          @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-          }
-        `}</style>
       </div>
     );
   }
 
-
   return (
-    <div style={styles.wrapper}>
-      <button style={styles.backButton} onClick={onCancel}>
+    <div className="min-h-screen p-5 font-sans bg-green-50 flex flex-col justify-center items-center">
+      <button
+        className="self-start mb-3 bg-transparent border-none cursor-pointer text-gray-500 text-base"
+        onClick={onCancel}
+      >
         ← Back
       </button>
 
-      <div style={styles.container}>
-        <h2 style={styles.header}>Select Emergency Type</h2>
+      <div className="bg-white rounded-2xl p-6 shadow-lg max-w-lg w-full">
+        <h2 className="text-2xl font-extrabold mb-5">Select Emergency Type</h2>
 
-        <div style={styles.optionsGrid}>
+        <div className="flex flex-col gap-3 mb-6">
           {types.map((type) => {
             const active = emergencyType === type.key;
             return (
               <div
                 key={type.key}
-                style={{
-                  ...styles.optionCard,
-                  borderColor: active ? "#FF0000" : "#eee",
-                  backgroundColor: active ? "#fff5f5" : "#fff",
-                  transform: active ? "scale(1.02)" : "scale(1)",
-                }}
+                className={`flex items-center p-5 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${
+                  active
+                    ? "border-red-500 bg-red-50 scale-102"
+                    : "border-gray-200 bg-white"
+                }`}
                 onClick={() => setEmergencyType(type.key)}
               >
-                <div style={styles.optionIcon}>{type.icon}</div>
-                <div style={styles.optionText}>{type.label}</div>
+                <span className="text-3xl mr-4">{type.icon}</span>
+                <span className="text-base font-semibold text-gray-900">{type.label}</span>
               </div>
             );
           })}
         </div>
 
-        <div style={styles.section}>
-          <label style={styles.label}>LOCATION NOTES (OPTIONAL)</label>
+        <div className="mb-5">
+          <label className="block text-xs font-bold mb-2 text-gray-500 uppercase tracking-wider">
+            Location Notes (Optional)
+          </label>
           <textarea
-            style={styles.textarea}
+            className="w-full p-3 rounded-xl border border-gray-200 text-sm resize-none outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
             placeholder="e.g. near the main gate, second floor"
             value={locationNotes}
             onChange={(e) => setLocationNotes(e.target.value)}
+            rows={3}
           />
         </div>
 
-        <button style={styles.confirmBtn} onClick={confirmEmergency}>
+        <button
+          className="w-full py-5 rounded-xl bg-red-600 text-white text-base font-bold border-none cursor-pointer shadow-lg hover:bg-red-700 transition duration-200"
+          onClick={confirmEmergency}
+        >
           Confirm Emergency →
         </button>
       </div>
@@ -137,272 +129,9 @@ function EmergencyConfirm({ onCancel }) {
 }
 
 const types = [
-  {
-    key: "Medical",
-    label: "Medical Emergency",
-    icon: "🩺",
-  },
-  {
-    key: "Accident",
-    label: "Traffic Accident",
-    icon: "🚗",
-  },
-  {
-    key: "Fire",
-    label: "Fire / Smoke",
-    icon: "🔥",
-  },
+  { key: "Medical", label: "Medical Emergency", icon: "🩺" },
+  { key: "Accident", label: "Traffic Accident", icon: "🚗" },
+  { key: "Fire", label: "Fire / Smoke", icon: "🔥" },
 ];
-
-const styles = {
-  wrapper: {
-    minHeight: "100vh",
-    padding: "20px",
-    fontFamily: "Segoe UI, sans-serif",
-    background: "#e8f5e9",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  container: {
-    background: "#fff",
-    borderRadius: "18px",
-    padding: "25px",
-    boxShadow: "0 8px 25px rgba(0,0,0,0.08)",
-    maxWidth: "480px",
-    width: "100%",
-  },
-
-  header: {
-    fontSize: "22px",
-    fontWeight: "800",
-    marginBottom: "20px",
-  },
-
-  optionsGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr",
-    gap: "14px",
-    marginBottom: "25px",
-  },
-
-  optionCard: {
-    display: "flex",
-    alignItems: "center",
-    padding: "18px",
-    borderRadius: "14px",
-    border: "2px solid #eee",
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-  },
-
-  optionIcon: {
-    fontSize: "28px",
-    marginRight: "15px",
-  },
-
-  optionText: {
-    fontSize: "16px",
-    fontWeight: "600",
-    color: "#111",
-  },
-
-  section: {
-    marginBottom: "20px",
-  },
-
-  label: {
-    fontSize: "12px",
-    fontWeight: "700",
-    marginBottom: "8px",
-    display: "block",
-    color: "#555",
-  },
-
-  textarea: {
-    width: "100%",
-    padding: "12px",
-    borderRadius: "10px",
-    border: "1px solid #eee",
-    fontSize: "14px",
-    resize: "none",
-  },
-
-  confirmBtn: {
-    width: "100%",
-    padding: "18px",
-    borderRadius: "12px",
-    background: "#FF0000",
-    color: "#fff",
-    fontSize: "16px",
-    fontWeight: "700",
-    border: "none",
-    cursor: "pointer",
-    boxShadow: "0 6px 14px rgba(255,0,0,0.25)",
-  },
-
-  backButton: {
-    background: "none",
-    border: "none",
-    marginBottom: "10px",
-    cursor: "pointer",
-    color: "#666",
-  },
-
-  fullScreen: {
-    minHeight: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "#e8f5e9",
-    padding: "20px",
-    textAlign: "center",
-  },
-
-  successCard: {
-    background: "#fff",
-    padding: "50px 40px",
-    borderRadius: "28px",
-    boxShadow: "0 20px 60px rgba(40, 167, 69, 0.2)",
-    maxWidth: "550px",
-    border: "3px solid #28a745",
-  },
-
-  iconCircle: {
-    position: "relative",
-    width: "120px",
-    height: "120px",
-    margin: "0 auto 25px",
-  },
-
-  pulseCircle: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: "120px",
-    height: "120px",
-    borderRadius: "50%",
-    border: "4px solid #28a745",
-    animation: "pulse-ring 2s ease-out infinite",
-  },
-
-  ambulanceIcon: {
-    position: "relative",
-    fontSize: "70px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    height: "120px",
-  },
-
-  successTitle: {
-    fontSize: "36px",
-    fontWeight: "900",
-    marginBottom: "20px",
-    color: "#1a1a1a",
-    letterSpacing: "0.5px",
-  },
-
-  statusBadge: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "8px",
-    backgroundColor: "#28a745",
-    color: "#ffffff",
-    padding: "12px 28px",
-    borderRadius: "30px",
-    fontSize: "18px",
-    fontWeight: "900",
-    marginBottom: "25px",
-    letterSpacing: "1.5px",
-    boxShadow: "0 4px 15px rgba(40, 167, 69, 0.3)",
-  },
-
-  statusDot: {
-    width: "10px",
-    height: "10px",
-    borderRadius: "50%",
-    backgroundColor: "#fff",
-    animation: "blink 1.5s ease-in-out infinite",
-  },
-
-  successText: {
-    fontSize: "18px",
-    color: "#555",
-    marginBottom: "35px",
-    lineHeight: "1.7",
-    fontWeight: "500",
-  },
-
-  etaBox: {
-    background: "linear-gradient(135deg, #e8f5e9 0%, #f1f8f4 100%)",
-    padding: "25px",
-    borderRadius: "18px",
-    fontSize: "18px",
-    marginBottom: "30px",
-    display: "flex",
-    alignItems: "center",
-    gap: "15px",
-    border: "2px solid #d4edda",
-  },
-
-  etaIcon: {
-    fontSize: "40px",
-  },
-
-  etaLabel: {
-    fontSize: "14px",
-    color: "#666",
-    marginBottom: "5px",
-    textAlign: "left",
-  },
-
-  etaTime: {
-    fontSize: "24px",
-    fontWeight: "900",
-    color: "#28a745",
-    textAlign: "left",
-  },
-
-  infoGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "12px",
-    marginBottom: "30px",
-  },
-
-  infoItem: {
-    background: "#f8f9fa",
-    padding: "15px",
-    borderRadius: "12px",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    fontSize: "14px",
-    fontWeight: "600",
-    color: "#555",
-  },
-
-  infoIcon: {
-    fontSize: "20px",
-  },
-
-  infoText: {
-    fontSize: "13px",
-  },
-
-  resetButton: {
-    background: "none",
-    border: "none",
-    color: "#28a745",
-    cursor: "pointer",
-    fontSize: "15px",
-    fontWeight: "600",
-    textDecoration: "underline",
-  },
-};
 
 export default EmergencyConfirm;
