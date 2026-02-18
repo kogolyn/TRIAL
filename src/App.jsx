@@ -21,7 +21,14 @@ import NavigationMap from "./components/NavigationMap";
 import EmergencyFacilities from './components/EmergencyFacilities';
 import DispatchComms from './components/DispatchComms';
 import PatientCare from './components/PatientCare';
+// Pages
+import Dispatcher from './pages/Dispatcher';
 
+// Dispatcher components (imported for specific routes if needed, though Dispatcher page aggregates them)
+import ActiveIncidents from './components/dispatcher/ActiveIncidents'
+import IncidentMap from './components/dispatcher/IncidentMap'
+import CoordinationActions from './components/dispatcher/CoordinationActions'
+import StatusCards from './components/dispatcher/StatusCards'
 // ── TEAMMATE'S PAGES (unchanged) ─────────────────────────────────────────────
 
 function LandingPage() {
@@ -338,6 +345,16 @@ function App() {
 
         {/* Catch-all → back to landing */}
         <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Main Dispatcher Dashboard Route */}
+        <Route path="/" element={<Navigate to="/dispatcher" replace />} />
+        <Route path="/dispatcher" element={<Dispatcher />} />
+
+        {/* Individual Component Routes (as requested) */}
+        <Route path="/active-incidents" element={<ActiveIncidents />} />
+        <Route path="/incident-map" element={<IncidentMap />} />
+        <Route path="/coordination-actions" element={<CoordinationActions />} />
+        <Route path="/status-cards" element={<StatusCards />} />
+
       </Routes>
     </BrowserRouter>
   );
