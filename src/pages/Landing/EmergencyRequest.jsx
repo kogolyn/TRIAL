@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import EmergencyConfirm from "./EmergencyConfirm";
-import ambulanceImg from "../assets/ambulanceimage.jpg";
-import logoImg from "../assets/logo.png";
-import Navbar from "../components/Navbar";
+import ambulanceImg from "../../assets/ambulanceimage.jpg";
+import logoImg from "../../assets/logo.png";
+import Navbar from "../../components/Landing/Navbar";
 
 function EmergencyRequest({ onProceed }) {
   const [location, setLocation] = useState(null);

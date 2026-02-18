@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import Layout from '../components/dispatcher/Layout';
-import ActiveIncidents from '../components/dispatcher/ActiveIncidents';
-import IncidentMap from '../components/dispatcher/IncidentMap';
-import CoordinationActions from '../components/dispatcher/CoordinationActions';
-import StatusCards from '../components/dispatcher/StatusCards';
+import Layout from '../../components/dispatcher/Layout';
+import ActiveIncidents from '../../pages/dispatcher/ActiveIncidents';
+import IncidentMap from '../../components/dispatcher/IncidentMap';
+import CoordinationActions from '../../pages/dispatcher/CoordinationActions';
+import StatusCards from '../../pages/dispatcher/StatusCards';
 
 export default function Dispatcher() {
     return (

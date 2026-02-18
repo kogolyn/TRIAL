@@ -1,40 +1,40 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
-// ── YOUR COMPONENTS ───────────────────────────────────────────────────────────
+// Admin COMPONENTS ───────────────────────────────────────────────────────────
 import Sidebar       from './components/Admin/Sidebar';
 import Navbar        from './components/Admin/Navbar';
 import Dashboard     from './pages/Admin/Dashboard';
 import Registration  from './pages/Admin/Registration';
 import Verification  from './pages/Admin/Verification';
 
-// ── TEAMMATE'S AUTH & EMERGENCY PAGES ─────────────────────────────────────────
-import EmergencyRequest from './pages/EmergencyRequest';
-import LoginForm        from './components/LoginForm';
-import RegisterForm     from './components/RegisterForm';
+//  AUTH & EMERGENCY PAGES ─────────────────────────────────────────
+import EmergencyRequest from './pages/Landing/EmergencyRequest';
+import LoginForm        from './pages/Authentication/LoginForm';
+import RegisterForm     from './pages/Authentication/RegisterForm';
 import logo             from './assets/logo.png';
 
-// ── TEAMMATE'S DASHBOARD LAYOUT & PAGES ───────────────────────────────────────
-import Layout         from './components/Layout';
-import Overview       from './pages/Overview';
-import IncomingAlerts from './pages/IncomingAlerts';
-import ActivePatients from './pages/ActivePatients';
-import Staff          from './pages/Staff';
-import BedsResources  from './pages/BedsResources';
-import Referrals      from './pages/Referrals';
+//  DASHBOARD LAYOUT & PAGES ───────────────────────────────────────
+import Layout         from './components/Hospital/Layout';
+import Overview       from './pages/Hospital/Overview';
+import IncomingAlerts from './pages/Hospital/IncomingAlerts';
+import ActivePatients from './pages/Hospital/ActivePatients';
+import Staff          from './pages/Hospital/Staff';
+import BedsResources  from './pages/Hospital/BedsResources';
+import Referrals      from './pages/Hospital/Referrals';
 
-// ── TEAMMATE'S AMBULANCE COMPONENTS ───────────────────────────────────────────
-import NavigationMap       from './components/NavigationMap';
-import EmergencyFacilities from './components/EmergencyFacilities';
-import DispatchComms       from './components/DispatchComms';
-import PatientCare         from './components/PatientCare';
-import Dispatcher          from './pages/Dispatcher';
+//  AMBULANCE COMPONENTS ───────────────────────────────────────────
+import NavigationMap       from './pages/Ambulance/NavigationMap';
+import EmergencyFacilities from './pages/Ambulance/EmergencyFacilities';
+import DispatchComms       from './pages/Ambulance/DispatchComms';
+import PatientCare         from './pages/Ambulance/PatientCare';
+import Dispatcher          from './pages/dispatcher/Dispatcher';
 
-// ── TEAMMATE'S DISPATCHER COMPONENTS ─────────────────────────────────────────
-import ActiveIncidents    from './components/dispatcher/ActiveIncidents';
+//  DISPATCHER COMPONENTS ─────────────────────────────────────────
+import ActiveIncidents    from './pages/dispatcher/ActiveIncidents';
 import IncidentMap        from './components/dispatcher/IncidentMap';
-import CoordinationActions from './components/dispatcher/CoordinationActions';
-import StatusCards        from './components/dispatcher/StatusCards';
+import CoordinationActions from './pages/dispatcher/CoordinationActions';
+import StatusCards        from './pages/dispatcher/StatusCards';
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
