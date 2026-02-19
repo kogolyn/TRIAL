@@ -8,8 +8,17 @@ function RegisterForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState('');
+  const [hospital, setHospital] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  const hospitals = [
+  "Kenyatta National Hospital",
+  "Nakuru Level 5 Hospital",
+  "Aga Khan Hospital",
+  "MP Shah Hospital"
+];
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
