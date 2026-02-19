@@ -69,21 +69,42 @@ function RegisterForm() {
         <label className="block text-sm font-medium text-blue-600 mb-2">
           Role
         </label>
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          className="w-full px-4 py-3 border border-blue-600 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-          required
-        >
-        
-          <option value="">Select your role</option>
-          <option value="dispatcher">Dispatcher</option>
-          <option value="ambulance">Ambulance Staff</option>
-          <option value="medical">Medical Personnel</option>
-        </select>
+     <select
+  value={role}
+  onChange={(e) => setRole(e.target.value.toLowerCase().trim())} // <-- changed line
+    className="w-full px-4 py-3 border border-blue-600 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+  required
+>
+  <option value="">Select your role</option>
+  <option value="dispatcher">Dispatcher</option>
+  <option value="ambulance">Ambulance Staff</option>
+  <option value="medical">Medical Personnel</option>
+</select>
+
       </div>
 
       <div>
+       {role === "medical" && (
+  <div>
+    <label className="block text-sm font-medium text-blue-600 mb-2">
+      Hospital
+    </label>
+    <select
+      value={hospital}
+      onChange={(e) => setHospital(e.target.value)}
+      className="w-64 px-4 py-3 border border-blue-600 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+      required
+    >
+      <option value="">Select Hospital</option>
+      {hospitals.map((h, index) => (
+        <option key={index} value={h}>
+          {h}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
+ 
         <label className="block text-sm font-medium text-blue-600 mb-2">
           Password
         </label>
