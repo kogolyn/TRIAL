@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 function RegisterForm() {
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,19 +20,33 @@ function RegisterForm() {
     "MP Shah Hospital"
   ];
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
+  if (password !== confirmPassword) {
+    setError('Passwords do not match');
+    return;
+  }
 
-    setLoading(true);
-    console.log({ name, email, password, role, hospital });
-    setTimeout(() => setLoading(false), 1000);
-  };
+  setLoading(true);
+
+  try {
+    await axios.post("http://localhost:5000/users/signup", {
+      name,
+      email,
+      password,
+      role,
+    });
+    alert("Registration successful! Please log in.");
+    console.log("User registered successfully");
+    navigate("/login");
+  } catch (err) {
+    setError(err.response?.data?.message || "Registration failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div>
@@ -83,7 +100,7 @@ function RegisterForm() {
           </select>
         </div>
 
-        {/* Hospital dropdown - smaller width */}
+        {/* Hospital dropdown - smaller width
         {role === "medical" && (
           <div>
             <label className="block text-sm font-medium text-blue-600 mb-2">
@@ -101,7 +118,7 @@ function RegisterForm() {
               ))}
             </select>
           </div>
-        )}
+        )} */}
 
         {/* Password */}
         <div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Admin COMPONENTS ───────────────────────────────────────────────────────────
 import Sidebar       from './components/Admin/Sidebar';
@@ -48,8 +49,9 @@ function LandingPage() {
   );
 }
 
-function LoginPage() {
+function LoginPage({ setUser }) {
   const [showLogin, setShowLogin] = useState(true);
+
   return (
     <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
       <div style={{ width: '100%', maxWidth: '448px' }}>
@@ -58,12 +60,16 @@ function LoginPage() {
             <img src={logo} alt="UzimaNode Logo" style={{ width: '48px', height: '48px', marginRight: '16px' }} />
             UzimaNode
           </h1>
-          <p style={{ fontSize: '24px', fontWeight: '700', color: '#1e3a8a' }}>Emergency Response System</p>
+          <p style={{ fontSize: '24px', fontWeight: '700', color: '#1e3a8a' }}>
+            Emergency Response System
+          </p>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
           <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
-          <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>sign in as staff</span>
+          <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}>
+            sign in as staff
+          </span>
           <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
         </div>
 
@@ -71,18 +77,42 @@ function LoginPage() {
           <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: '#f3f4f6', padding: '4px', borderRadius: '8px' }}>
             <button
               onClick={() => setShowLogin(true)}
-              style={{ flex: 1, padding: '8px', borderRadius: '8px', fontWeight: '600', border: 'none', cursor: 'pointer', background: showLogin ? '#2563eb' : 'transparent', color: showLogin ? '#fff' : '#4b5563' }}
+              style={{
+                flex: 1,
+                padding: '8px',
+                borderRadius: '8px',
+                fontWeight: '600',
+                border: 'none',
+                cursor: 'pointer',
+                background: showLogin ? '#2563eb' : 'transparent',
+                color: showLogin ? '#fff' : '#4b5563'
+              }}
             >
               Login
             </button>
             <button
               onClick={() => setShowLogin(false)}
-              style={{ flex: 1, padding: '8px', borderRadius: '8px', fontWeight: '600', border: 'none', cursor: 'pointer', background: !showLogin ? '#2563eb' : 'transparent', color: !showLogin ? '#fff' : '#4b5563' }}
+              style={{
+                flex: 1,
+                padding: '8px',
+                borderRadius: '8px',
+                fontWeight: '600',
+                border: 'none',
+                cursor: 'pointer',
+                background: !showLogin ? '#2563eb' : 'transparent',
+                color: !showLogin ? '#fff' : '#4b5563'
+              }}
             >
               Register
             </button>
           </div>
-          {showLogin ? <LoginForm /> : <RegisterForm />}
+
+          {/* ✅ IMPORTANT FIX — pass setUser */}
+          {showLogin
+            ? <LoginForm setUser={setUser} />
+            : <RegisterForm />
+          }
+
         </div>
 
         <p style={{ textAlign: 'center', color: '#4b5563', fontSize: '14px', marginTop: '24px' }}>
@@ -524,36 +554,59 @@ function DashboardRoutes() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function App() {
+  const [user, setUser] = useState(() => {
+    return JSON.parse(localStorage.getItem("user")) || null;
+  });
+
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* ── Public / Auth ── */}
-        <Route path="/"      element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />}   />
+        {/* Public */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage setUser={setUser} />} />
 
-        {/* ── Your Admin Panel ── */}
-        <Route path="/admin/*" element={<AdminApp />} />
+        {/* Protected */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute user={user} role="admin">
+              <AdminApp />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* ── Ambulance Crew Dashboard ── */}
-        <Route path="/ambulance" element={<AmbulanceDashboard />} />
+        <Route
+          path="/ambulance"
+          element={
+            <ProtectedRoute user={user} role="ambulance">
+              <AmbulanceDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* ── Hospital Dashboard pages ── */}
-        <Route path="/dashboard/*" element={<DashboardRoutes />} />
+        <Route
+          path="/dispatcher"
+          element={
+            <ProtectedRoute user={user} role="dispatcher">
+              <Dispatcher />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* ── Dispatcher Dashboard ── */}
-        <Route path="/dispatcher"            element={<Dispatcher />}            />
-        <Route path="/active-incidents"      element={<ActiveIncidents />}       />
-        <Route path="/incident-map"          element={<IncidentMap />}           />
-        <Route path="/coordination-actions"  element={<CoordinationActions />}   />
-        <Route path="/status-cards"          element={<StatusCards />}           />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute user={user} role="medical">
+              <DashboardRoutes />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* ── Catch-all ── */}
         <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>
     </BrowserRouter>
   );
 }
-
 export default App;

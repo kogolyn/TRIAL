@@ -15,27 +15,57 @@ router.get("/", async (req, res) => {
     // res.send("Users API")
   } else {
     res.status(500).json({ message: "an error occured" });
-  }
+  } 
 });
 
 // Create a new user
-router.post("/", async (req, res) => {
+router.post("/signup", async (req, res) => {
   try {
-    const email = req.body.email;
+    const {name, email, password, role} = req.body;
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
       res.status(400).json({ message: "user with that email exists" });
+      return;
     }
-    const newUser = await User.create(req.body);
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await User.create({name, email, password: hashedPassword, role});
 
     console.log(`${req.body.name} user created successfully`);
-    res.status(200).json(newUser);
+    res.status(201).json(newUser);
 
     return;
   } catch (error) {
     console.log(error.message);
-    res.status(500).json(error);
+    res.status(500).json({message: "an error occurred while creating user"});
+  }
+});
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid email or password" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid email or password" });
+    }
+
+    // Include ROLE in the response
+    res.status(200).json({
+      message: "Login successful",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
   }
 });
 

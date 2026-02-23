@@ -1,21 +1,37 @@
 import { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
-function LoginForm() {
+function LoginForm({ setUser }) {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(""); // added error state
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); // clear previous errors
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/users/login",
+        {email, password},
+      );
+      const loggedInUser = response.data.user;
+      alert(response.data.message);
+      console.log(`Login successful:`, loggedInUser);
+ 
+      // // 1. Save user to App state and LocalStorage
+      setUser(loggedInUser);
 
-    if (!email || !password) {
-      setError("Please enter both email and password");
-      return;
+      // // 2. Navigate based on role
+      if (loggedInUser.role === "admin") navigate("/admin");
+      else if (loggedInUser.role === "dispatcher") navigate("/dispatcher");
+      else if (loggedInUser.role === "ambulance") navigate("/ambulance");
+      else navigate("/dashboard");
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Login failed. Check your credentials.",
+      );
     }
-
-    console.log("Logging in:", email, password);
-    // You can add real login logic here
   };
 
   return (
