@@ -18,8 +18,6 @@ import logo             from './assets/logo.png';
 import Layout         from './components/Hospital/Layout';
 import Overview       from './pages/Hospital/Overview';
 import IncomingAlerts from './pages/Hospital/IncomingAlerts';
-import ActivePatients from './pages/Hospital/ActivePatients';
-import Staff          from './pages/Hospital/Staff';
 import BedsResources  from './pages/Hospital/BedsResources';
 import Referrals      from './pages/Hospital/Referrals';
 
@@ -275,7 +273,7 @@ function AmbulanceDashboard() {
                     </span>
                     <span className="text-gray-700">
                       {condition.type === 'congestion'
-                        ? 'Congestion at ${condition.location}'
+                        ? `Congestion at ${condition.location}`
                         : condition.location}
                     </span>
                   </div>
@@ -510,13 +508,11 @@ function DashboardRoutes() {
   return (
     <Layout>
       <Routes>
-        <Route path="/"          element={<Overview />}       />
-        <Route path="/alerts"    element={<IncomingAlerts />} />
-        <Route path="/patients"  element={<ActivePatients />} />
-        <Route path="/staff"     element={<Staff />}          />
-        <Route path="/beds"      element={<BedsResources />}  />
-        <Route path="/referrals" element={<Referrals />}      />
-        <Route path="*"          element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Overview />} />
+        <Route path="/alerts" element={<IncomingAlerts />} />
+        <Route path="/beds" element={<BedsResources />} />
+        <Route path="/referrals" element={<Referrals />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Layout>
   );

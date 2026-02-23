@@ -64,13 +64,11 @@ export default function BedsResources() {
   return (
     <div className="max-w-screen-xl mx-auto space-y-6">
 
-      {/* Top summary bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Top summary bar - REMOVED Occupancy and Blood Alerts */}
+      <div className="grid grid-cols-2 gap-3">
         {[
           { label: "Total Beds",       value: totalBeds,       color: "blue",   icon: Bed          },
           { label: "Available Beds",   value: availBeds,       color: "green",  icon: CheckCircle  },
-          { label: "Occupancy",        value: `${occupancy}%`, color: occupancy > 80 ? "red" : occupancy > 60 ? "yellow" : "green", icon: Activity },
-          { label: "Blood Alerts",     value: criticalBlood,   color: criticalBlood > 0 ? "red" : "green", icon: AlertTriangle },
         ].map(({ label, value, color, icon: Icon }) => (
           <div key={label} className={`bg-white rounded-xl p-4 shadow-sm border border-slate-100 border-l-4 border-l-${color}-500`}>
             <div className="flex justify-between items-start mb-2">
@@ -215,12 +213,7 @@ export default function BedsResources() {
             </div>
 
             {/* Min stock legend */}
-            <p className="text-xs text-slate-400 text-center mb-3">Minimum threshold: 5 units per type</p>
-
-            <button className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl
-              font-bold text-sm transition-colors flex items-center justify-center gap-2">
-              <AlertTriangle className="w-4 h-4" /> Request Blood Products
-            </button>
+            <p className="text-xs text-slate-400 text-center">Minimum threshold: 5 units per type</p>
           </div>
         </div>
       </div>
