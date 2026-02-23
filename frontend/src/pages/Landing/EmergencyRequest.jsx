@@ -53,59 +53,90 @@ function EmergencyRequest({ onProceed }) {
       <Navbar onProceed={onProceed} />
 
       {/* HOME SECTION */}
-      <section id="home" className="scroll-mt-20 px-3 sm:px-5 md:px-8 py-5">
+      <section
+        id="home"
+        className="scroll-mt-20 px-3 sm:px-5 md:px-8 py-4 
+        min-h-[calc(100vh-80px)] flex flex-col justify-between"
+      >
         {/* HEADER WITH AMBULANCE BACKGROUND */}
         <div
-          className="rounded-2xl overflow-hidden mb-6 sm:mb-8 relative text-center mt-16 sm:mt-20"
+          className="rounded-2xl overflow-hidden relative text-center mt-14 sm:mt-16"
           style={{
             backgroundImage: `url(${ambulanceImg})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundColor: "#000",
-            padding: "60px 15px",
+            padding: "35px 15px",
           }}
         >
           <div className="absolute inset-0 bg-black/50"></div>
           <div className="relative z-10">
-            <img src={logoImg} alt="UzimaNode Logo" className="h-40 sm:h-56 md:h-64 lg:h-72 mx-auto" />
-            <p className="text-white text-sm sm:text-lg md:text-xl font-semibold mt-2 sm:mt-3 px-2">Fast Reliable Lifesaving</p>
+            <img
+              src={logoImg}
+              alt="UzimaNode Logo"
+              className="h-28 sm:h-36 md:h-44 mx-auto"
+            />
+            <p className="text-white text-sm sm:text-lg font-semibold mt-2 px-2">
+              Fast Reliable Lifesaving
+            </p>
           </div>
         </div>
 
         {/* EMERGENCY BUTTON */}
-        <div className="relative flex justify-center mb-6 sm:mb-8">
-          <div className="absolute w-36 h-36 sm:w-44 sm:h-44 md:w-48 md:h-48 border-3 sm:border-4 border-red-500 rounded-full animate-ping opacity-75"></div>
-          <div className="absolute w-36 h-36 sm:w-44 sm:h-44 md:w-48 md:h-48 border-3 sm:border-4 border-red-500 rounded-full animate-ping opacity-75" style={{ animationDelay: "1s" }}></div>
+        <div className="relative flex justify-center my-4">
+          <div className="absolute w-32 h-32 sm:w-40 sm:h-40 border-4 border-red-500 rounded-full animate-ping opacity-75"></div>
+          <div
+            className="absolute w-32 h-32 sm:w-40 sm:h-40 border-4 border-red-500 rounded-full animate-ping opacity-75"
+            style={{ animationDelay: "1s" }}
+          ></div>
+
           <button
-            className={`relative z-10 bg-red-500 text-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-10 border-none cursor-pointer w-full max-w-xs sm:max-w-sm transition-transform duration-200 ${isHovering ? "scale-105" : "scale-100"}`}
+            className={`relative z-10 bg-red-500 text-white rounded-3xl p-6 sm:p-8 border-none cursor-pointer w-full max-w-xs transition-transform duration-200 ${
+              isHovering ? "scale-105" : "scale-100"
+            }`}
             onClick={() => setShowConfirmPage(true)}
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
           >
-            <div className="text-4xl sm:text-5xl mb-2">🚨</div>
-            <div className="text-xl sm:text-2xl font-bold">REQUEST HELP NOW</div>
-            <div className="text-xs sm:text-sm opacity-90 mt-1">⚡ fast response time</div>
+            <div className="text-4xl mb-2">🚨</div>
+            <div className="text-xl font-bold">REQUEST HELP NOW</div>
+            <div className="text-xs opacity-90 mt-1">
+              ⚡ fast response time
+            </div>
           </button>
         </div>
 
         {/* INFO CARDS */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 max-w-lg mx-auto mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto">
           {/* Status Card */}
-          <div className="flex-1 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center shadow-lg border-2 border-white/60 bg-gradient-to-br from-green-100 to-green-200">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-2 sm:mb-3 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl bg-white/90 shadow-md">⏱</div>
-            <div className="text-[10px] sm:text-xs font-bold tracking-wider uppercase text-emerald-800 mb-1">STATUS</div>
-            <div className="text-base sm:text-lg font-extrabold text-emerald-900">{status}</div>
+          <div className="flex-1 rounded-xl p-4 text-center shadow-lg border-2 border-white/60 bg-gradient-to-br from-green-100 to-green-200">
+            <div className="w-12 h-12 mx-auto mb-2 rounded-xl flex items-center justify-center text-xl bg-white/90 shadow-md">
+              ⏱
+            </div>
+            <div className="text-xs font-bold uppercase text-emerald-800 mb-1">
+              STATUS
+            </div>
+            <div className="text-base font-extrabold text-emerald-900">
+              {status}
+            </div>
           </div>
 
           {/* Location Card */}
-          <div className="flex-1 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center shadow-lg border-2 border-white/60 bg-gradient-to-br from-blue-100 to-blue-300">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-2 sm:mb-3 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl bg-white/90 shadow-md">📍</div>
-            <div className="text-[10px] sm:text-xs font-bold tracking-wider uppercase text-blue-900 mb-1">YOUR LOCATION</div>
-            <div className="text-base sm:text-lg font-extrabold text-blue-800 break-words">{location || "Detecting..."}</div>
+          <div className="flex-1 rounded-xl p-4 text-center shadow-lg border-2 border-white/60 bg-gradient-to-br from-blue-100 to-blue-300">
+            <div className="w-12 h-12 mx-auto mb-2 rounded-xl flex items-center justify-center text-xl bg-white/90 shadow-md">
+              📍
+            </div>
+            <div className="text-xs font-bold uppercase text-blue-900 mb-1">
+              YOUR LOCATION
+            </div>
+            <div className="text-base font-extrabold text-blue-800 break-words">
+              {location || "Detecting..."}
+            </div>
           </div>
         </div>
       </section>
 
+      {/* EVERYTHING BELOW REMAINS EXACTLY THE SAME */}
       {/* ABOUT SECTION */}
       <section id="about" className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 md:px-8 bg-white scroll-mt-20">
         <div className="max-w-6xl mx-auto">
@@ -115,6 +146,8 @@ function EmergencyRequest({ onProceed }) {
           <p className="text-center text-gray-600 mb-8 sm:mb-10 md:mb-12 text-sm sm:text-base md:text-lg max-w-3xl mx-auto px-2">
             Your trusted emergency response partner, saving lives through smart technology
           </p>
+
+          {/* rest unchanged... */}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {/* Mission */}
