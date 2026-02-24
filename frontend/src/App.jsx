@@ -595,7 +595,7 @@ function App() {
         />
 
         <Route
-          path="/dashboard"
+          path="/dashboard/*"
           element={
             <ProtectedRoute user={user} role="medical">
               <DashboardRoutes />
