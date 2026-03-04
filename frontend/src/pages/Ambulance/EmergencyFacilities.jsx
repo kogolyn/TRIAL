@@ -1,82 +1,132 @@
-import React from 'react';
+import React from "react";
 
-function EmergencyFacilities({ facilities }) {
+function EmergencyFacilities({
+  facilities,
+  requiredBeds = 1,
+  selectedFacilityId,
+  onSelectFacility,
+  onViewAllMap,
+}) {
+  const availableFacilities = facilities.filter((facility) => facility.canAccept);
+  const sortedFacilities = [...facilities].sort((a, b) => {
+    const aAvailable = a.canAccept ? 1 : 0;
+    const bAvailable = b.canAccept ? 1 : 0;
+    if (aAvailable !== bAvailable) return bAvailable - aAvailable;
+    return Number(a.distanceKm || 0) - Number(b.distanceKm || 0);
+  });
+
   return (
-    <div className="rounded-xl border border-[#2a3142] overflow-hidden shadow-lg bg-[#111827]">
-      
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-[#2a3142] flex justify-between items-center bg-[#1a1f2e]">
-        <h3 className="text-base font-semibold text-blue-400">🏥 Emergency Facilities</h3>
-        <button className="text-gray-400 hover:text-white transition-colors text-xl">⛶</button>
+    <div className="rounded-2xl border border-[#2a3142] overflow-hidden shadow-xl bg-[#111827]">
+      <div className="px-6 py-5 border-b border-[#2a3142] bg-[#171d33] flex items-center justify-between">
+        <div>
+          <h3 className="text-lg leading-none font-bold text-[#4da3ff]">
+            Emergency Facilities
+          </h3>
+          <p className="mt-2 text-xs text-gray-400">Beds needed: {requiredBeds}</p>
+        </div>
+        <button
+          className="w-9 h-9 rounded-full border border-[#334155] text-gray-300 hover:text-white hover:border-[#4da3ff] transition-colors"
+          aria-label="Refresh facilities"
+        >
+          +
+        </button>
       </div>
 
-      {/* Facilities List */}
-      <div className="p-4 space-y-3 bg-[#111827]">
-        {facilities.map((facility) => (
-          <div
-            key={facility.id}
-            className={`p-4 rounded-lg border-2 transition-all hover:shadow-lg cursor-pointer ${
-              facility.status === 'available'
-                ? 'bg-green-900/20 border-green-600 hover:bg-green-900/30'
-                : 'bg-red-900/20 border-red-600 hover:bg-red-900/30'
-            }`}
-          >
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex-1">
-                <h4 className="text-white font-semibold text-base mb-1">
-                  {facility.name}
-                </h4>
-                <p className="text-gray-400 text-xs">{facility.level}</p>
-              </div>
-              <div
-                className={`px-3 py-1 rounded-full text-xs font-bold ${
-                  facility.status === 'available'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-red-600 text-white'
-                }`}
-              >
-                {facility.status === 'available' ? '✓ Available' : '⚠ Busy'}
-              </div>
-            </div>
+      <div className="px-4 pt-4 pb-2 bg-[#111827]">
+        <p className="text-xs font-semibold text-gray-300 mb-2">Available Hospitals</p>
+        {availableFacilities.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {availableFacilities.map((facility) => {
+              const isSelected = selectedFacilityId === facility.id;
+              return (
+                <button
+                  key={`quick-${facility.id}`}
+                  onClick={() => onSelectFacility?.(facility)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                    isSelected
+                      ? "bg-[#1d4ed8] border-[#1d4ed8] text-white"
+                      : "bg-[#1a1f2e] border-[#00d37d] text-[#8af5c0] hover:bg-[#12302f]"
+                  }`}
+                >
+                  {facility.name} ({facility.bedsAvailable})
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-xs text-yellow-400">No hospital currently has enough available beds.</p>
+        )}
+      </div>
 
-            <div className="flex items-center justify-between text-sm mt-3 pt-3 border-t border-[#2a3142]">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🛏️</span>
-                <span className="text-gray-300">{facility.beds}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">⏱️</span>
+      <div className="p-4 pt-2 space-y-3 bg-[#111827]">
+        {sortedFacilities.map((facility) => {
+          const isSelected = selectedFacilityId === facility.id;
+          const isAvailable = facility.canAccept;
+
+          return (
+            <div
+              key={facility.id}
+              className={`p-4 rounded-xl border-2 transition-all ${
+                isAvailable
+                  ? "bg-gradient-to-br from-[#0e2a2e] to-[#10253c] border-[#00d37d]"
+                  : "bg-gradient-to-br from-[#311622] to-[#1f1834] border-[#ff3e54]"
+              }`}
+            >
+              <div className="flex items-start justify-between mb-1">
+                <div>
+                  <h4 className="text-white font-bold text-lg leading-tight">{facility.name}</h4>
+                  <p className="text-gray-300 text-xs mt-1">{facility.level}</p>
+                </div>
                 <span
-                  className={`font-semibold ${
-                    parseInt(facility.wait) < 20
-                      ? 'text-green-400'
-                      : 'text-yellow-400'
+                  className={`px-4 py-1.5 rounded-full text-[11px] font-bold ${
+                    isAvailable ? "bg-[#16c46a] text-white" : "bg-[#ef3333] text-white"
+                  }`}
+                >
+                  {isAvailable ? "Available" : "Busy"}
+                </span>
+              </div>
+
+              <div className="my-3 h-px bg-[#3a445b]" />
+
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-200">{facility.beds}</span>
+                <span
+                  className={`font-bold ${
+                    parseInt(facility.wait, 10) < 20 ? "text-green-400" : "text-yellow-400"
                   }`}
                 >
                   {facility.wait} wait
                 </span>
               </div>
-            </div>
 
-            <button
-              className={`w-full mt-3 py-2 rounded-lg font-semibold text-sm transition-all ${
-                facility.status === 'available'
-                  ? 'bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg'
-                  : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-              }`}
-              disabled={facility.status !== 'available'}
-            >
-              {facility.status === 'available' ? 'Select Facility' : 'Currently Full'}
-            </button>
-          </div>
-        ))}
+              <button
+                onClick={() => onSelectFacility?.(facility)}
+                disabled={!isAvailable || isSelected}
+                className={`w-full mt-4 py-2.5 rounded-lg font-bold text-sm transition-all ${
+                  isSelected
+                    ? "bg-[#1d4ed8] text-white"
+                    : isAvailable
+                      ? "bg-[#16a34a] hover:bg-[#15803d] text-white"
+                      : "bg-[#475569] text-gray-200 cursor-not-allowed"
+                }`}
+              >
+                {isSelected
+                  ? "Selected Facility"
+                  : isAvailable
+                    ? "Select Facility"
+                    : "Currently Full"}
+              </button>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Footer */}
-      <div className="px-6 py-4 bg-[#1a1f2e] border-t border-[#2a3142]">
-        <button className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
-          <span>📍</span>
-          <span>View All Facilities on Map</span>
+      <div className="px-4 py-4 bg-[#171d33] border-t border-[#2a3142]">
+        <button
+          onClick={onViewAllMap}
+          className="w-full py-3.5 bg-[#2f66de] hover:bg-[#2558c9] text-white font-bold rounded-xl transition-all"
+        >
+          View All Facilities on Map
         </button>
       </div>
     </div>

@@ -1,21 +1,30 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { apiRequest } from "../../config/api";
 
 function Profile() {
   const [user, setUser] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchProfile = async () => {
+      const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+      const userId = storedUser?.id;
+      if (!userId) {
+        setError("No logged-in user found.");
+        return;
+      }
+
       try {
-        const res = await axios.get("http://localhost:5000/api/auth/profile");
-        setUser(res.data);
-      } catch (err) {
-        alert("Failed to load profile");
+        const profile = await apiRequest(`/users/${userId}`);
+        setUser(profile);
+      } catch {
+        setError("Failed to load profile");
       }
     };
     fetchProfile();
   }, []);
 
+  if (error) return <p>{error}</p>;
   if (!user) return <p>Loading profile...</p>;
 
   return (

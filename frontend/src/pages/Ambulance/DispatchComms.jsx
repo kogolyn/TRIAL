@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-function DispatchComms({ messages, onRadioDispatch }) {
+function DispatchComms({ messages, onRadioDispatch, onSendMessage }) {
   const [newMessage, setNewMessage] = useState('');
 
   const formatTime = (date) => {
@@ -15,9 +15,13 @@ function DispatchComms({ messages, onRadioDispatch }) {
     return `${diffHours}h ago`;
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (newMessage.trim()) {
-      console.log('Sending message:', newMessage);
+      if (onSendMessage) {
+        await onSendMessage(newMessage.trim());
+      } else {
+        console.log('Sending message:', newMessage);
+      }
       setNewMessage('');
     }
   };
@@ -83,7 +87,7 @@ function DispatchComms({ messages, onRadioDispatch }) {
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
             placeholder="Type message to dispatch..."
             className="flex-1 px-4 py-2 bg-[#111827] border border-[#2a3142] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
           />

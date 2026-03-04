@@ -1,6 +1,6 @@
 import { useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { apiRequest } from "../../config/api";
 
 function LoginForm({ setUser }) {
   const navigate = useNavigate();
@@ -11,16 +11,17 @@ function LoginForm({ setUser }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(
-        "http://localhost:5000/users/login",
-        {email, password},
-      );
-      const loggedInUser = response.data.user;
-      alert(response.data.message);
+      const response = await apiRequest("/users/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      const loggedInUser = response.user;
+      alert(response.message);
       console.log(`Login successful:`, loggedInUser);
  
       // // 1. Save user to App state and LocalStorage
       setUser(loggedInUser);
+      localStorage.setItem("user", JSON.stringify(loggedInUser));
 
       // // 2. Navigate based on role
       if (loggedInUser.role === "admin") navigate("/admin");
@@ -29,7 +30,7 @@ function LoginForm({ setUser }) {
       else navigate("/dashboard");
     } catch (err) {
       setError(
-        err.response?.data?.message || "Login failed. Check your credentials.",
+        err.message || "Login failed. Check your credentials.",
       );
     }
   };

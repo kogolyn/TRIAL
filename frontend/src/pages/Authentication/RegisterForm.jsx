@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { apiRequest } from "../../config/api";
 
 function RegisterForm() {
   const navigate = useNavigate();
@@ -9,16 +9,9 @@ function RegisterForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState('');
-  const [hospital, setHospital] = useState(''); // ✅ Added hospital state
+  const [ambulanceId, setAmbulanceId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const hospitals = [
-    "Kenyatta National Hospital",
-    "Nakuru Level 5 Hospital",
-    "Aga Khan Hospital",
-    "MP Shah Hospital"
-  ];
 
  const handleSubmit = async (e) => {
   e.preventDefault();
@@ -32,17 +25,21 @@ function RegisterForm() {
   setLoading(true);
 
   try {
-    await axios.post("http://localhost:5000/users/signup", {
-      name,
-      email,
-      password,
-      role,
+    await apiRequest("/users/signup", {
+      method: "POST",
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        role,
+        ambulanceId: role === "ambulance" ? ambulanceId.trim() : undefined,
+      }),
     });
     alert("Registration successful! Please log in.");
     console.log("User registered successfully");
     navigate("/login");
   } catch (err) {
-    setError(err.response?.data?.message || "Registration failed");
+    setError(err.message || "Registration failed");
   } finally {
     setLoading(false);
   }
@@ -100,27 +97,23 @@ function RegisterForm() {
           </select>
         </div>
 
-        {/* Hospital dropdown - smaller width
-        {role === "medical" && (
+        {role === "ambulance" && (
           <div>
             <label className="block text-sm font-medium text-blue-600 mb-2">
-              Hospital
+              Ambulance ID
             </label>
-            <select
-              value={hospital}
-              onChange={(e) => setHospital(e.target.value)}
-              className="w-64 px-4 py-3 border border-blue-600 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+            <input
+              type="text"
+              value={ambulanceId}
+              onChange={(e) => setAmbulanceId(e.target.value.toUpperCase())}
+              className="w-full px-4 py-3 border border-blue-600 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+              placeholder="e.g. AMB-04"
               required
-            >
-              <option value="">Select Hospital</option>
-              {hospitals.map((h, index) => (
-                <option key={index} value={h}>{h}</option>
-              ))}
-            </select>
+            />
           </div>
-        )} */}
+        )}
 
-        {/* Password */}
+                {/* Password */}
         <div>
           <label className="block text-sm font-medium text-blue-600 mb-2">
             Password
@@ -171,3 +164,4 @@ function RegisterForm() {
 }
 
 export default RegisterForm;
+
