@@ -1,5 +1,4 @@
 import { useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 function LoginForm({ setUser }) {
@@ -11,16 +10,22 @@ function LoginForm({ setUser }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(
-        "http://localhost:5000/users/login",
-        {email, password},
-      );
-      const loggedInUser = response.data.user;
-      alert(response.data.message);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/users/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Login failed. Check your credentials.");
+      const loggedInUser = data.user;
+      const token = data.token;
+      alert(data.message);
       console.log(`Login successful:`, loggedInUser);
  
       // // 1. Save user to App state and LocalStorage
       setUser(loggedInUser);
+      localStorage.setItem("user", JSON.stringify(loggedInUser));
+      localStorage.setItem("token", token);
 
       // // 2. Navigate based on role
       if (loggedInUser.role === "admin") navigate("/admin");
@@ -28,9 +33,7 @@ function LoginForm({ setUser }) {
       else if (loggedInUser.role === "ambulance") navigate("/ambulance");
       else navigate("/dashboard");
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Login failed. Check your credentials.",
-      );
+      setError(err.message || "Login failed. Check your credentials.");
     }
   };
 

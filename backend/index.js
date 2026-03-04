@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 
 import userRoutes from "./routes/user.routes.js";
+import hospitalRoutes from "./routes/hospital.routes.js";
 
 
 const app = express();
@@ -20,6 +21,7 @@ app.get("/", (req, res) => {
     res.send("Welcome to Uzima API");
 });
 app.use("/users", userRoutes);
+app.use("/hospital", hospitalRoutes);
 
 connectDB()
   .then(() => {
