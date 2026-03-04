@@ -21,15 +21,26 @@ router.get("/", async (req, res) => {
 // Create a new user
 router.post("/signup", async (req, res) => {
   try {
-    const {name, email, password, role} = req.body;
+    const {name, email, password, role, ambulanceId} = req.body;
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
       res.status(400).json({ message: "user with that email exists" });
       return;
     }
+    if (role === "ambulance" && !ambulanceId) {
+      res.status(400).json({ message: "ambulanceId is required for ambulance role" });
+      return;
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await User.create({name, email, password: hashedPassword, role});
+    const newUser = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role,
+      ambulanceId: role === "ambulance" ? ambulanceId : undefined,
+    });
 
     console.log(`${req.body.name} user created successfully`);
     res.status(201).json(newUser);
@@ -62,6 +73,7 @@ router.post("/login", async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        ambulanceId: user.ambulanceId || null,
       },
     });
   } catch (error) {

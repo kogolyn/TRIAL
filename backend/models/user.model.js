@@ -15,6 +15,14 @@ const userSchema = new mongoose.Schema(
         required: true,
         enum: ["admin", "dispatcher", "ambulance","medical"],
     },
+    ambulanceId: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      required: function requiredAmbulanceId() {
+        return this.role === "ambulance";
+      },
+    },
     password: {
       type: String,
       required: true,
