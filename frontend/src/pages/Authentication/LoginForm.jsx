@@ -3,10 +3,19 @@ import { useState } from "react";
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState(""); // added error state
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setError(""); // clear previous errors
+
+    if (!email || !password) {
+      setError("Please enter both email and password");
+      return;
+    }
+
     console.log("Logging in:", email, password);
+    // You can add real login logic here
   };
 
   return (
@@ -36,6 +45,8 @@ function LoginForm() {
           className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         />
       </div>
+
+      {error && <p className="text-red-600 text-sm mb-4">{error}</p>} {/* display error */}
 
       <button
         type="submit"
