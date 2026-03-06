@@ -118,7 +118,7 @@ function RegisterForm() {
               ))}
             </select>
           </div>
-        )} */}
+        )} }
 
         {/* Password */}
         <div>

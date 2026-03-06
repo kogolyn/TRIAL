@@ -4,19 +4,28 @@ function EmergencyConfirm({ onCancel }) {
   const [emergencyType, setEmergencyType] = useState("");
   const [subType, setSubType] = useState("");
   const [customSubType, setCustomSubType] = useState("");
+  const [reporterName, setReporterName] = useState("");
+  const [reporterPhone, setReporterPhone] = useState("");
   const [locationNotes, setLocationNotes] = useState("");
   const [userLocation, setUserLocation] = useState("Detecting location...");
+  const [coordinates, setCoordinates] = useState({ lat: -0.3031, lng: 36.08 });
   const [isConfirmed, setIsConfirmed] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const [incidentCode, setIncidentCode] = useState("");
 
-  // Get user's location
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
+          setCoordinates({ lat: latitude, lng: longitude });
+
           try {
             const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
+              `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`,
             );
             const data = await res.json();
             const address = data.address || {};
@@ -32,12 +41,37 @@ function EmergencyConfirm({ onCancel }) {
             setUserLocation("Location unavailable");
           }
         },
-        () => setUserLocation("Location access denied")
+        () => setUserLocation("Location access denied"),
       );
     }
   }, []);
 
-  const confirmEmergency = () => {
+  function resolveSeverity(type, detail) {
+    const criticalKeywords = ["heart", "stroke", "unconscious", "severe bleeding", "multiple vehicles", "gas explosion"];
+    const text = `${type} ${detail}`.toLowerCase();
+    if (criticalKeywords.some((kw) => text.includes(kw))) return "critical";
+    if (type === "Fire") return "urgent";
+    if (type === "Accident") return "urgent";
+    return "moderate";
+  }
+
+  function resolvePriority(severity) {
+    if (severity === "critical") return "critical";
+    if (severity === "urgent") return "high";
+    if (severity === "minor") return "low";
+    return "normal";
+  }
+
+  function getSubTypes() {
+    const selected = types.find((t) => t.key === emergencyType);
+    return selected ? selected.subTypes : [];
+  }
+
+  function getEmergencyDisplay() {
+    return subType === "Other" ? customSubType : subType;
+  }
+
+  async function confirmEmergency() {
     if (!emergencyType) {
       alert("Please select an emergency type");
       return;
@@ -50,38 +84,64 @@ function EmergencyConfirm({ onCancel }) {
       alert("Please describe the emergency");
       return;
     }
-    setIsConfirmed(true);
-  };
 
-  const handleReset = () => {
+    const detail = subType === "Other" ? customSubType.trim() : subType;
+    const severity = resolveSeverity(emergencyType, detail);
+    const priority = resolvePriority(severity);
+
+    const payload = {
+      reporterName: reporterName.trim() || "Public Reporter",
+      reporterPhone: reporterPhone.trim(),
+      condition: `${emergencyType}: ${detail}`,
+      description: locationNotes.trim() ? `${detail}. Notes: ${locationNotes.trim()}` : detail,
+      severity,
+      priority,
+      location: {
+        lat: coordinates.lat,
+        lng: coordinates.lng,
+        address: userLocation,
+      },
+    };
+
+    try {
+      setSending(true);
+      setError("");
+      const res = await fetch(`${API_BASE_URL}/dispatcher/incidents/report`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to report emergency");
+      setIncidentCode(data?.id || "");
+      setIsConfirmed(true);
+    } catch (err) {
+      setError(err.message || "Failed to submit emergency report");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function handleReset() {
     setIsConfirmed(false);
     setEmergencyType("");
     setSubType("");
     setCustomSubType("");
+    setReporterName("");
+    setReporterPhone("");
     setLocationNotes("");
+    setError("");
+    setIncidentCode("");
     onCancel();
-  };
-
-  // Get sub-types based on selected emergency type
-  const getSubTypes = () => {
-    const selected = types.find(t => t.key === emergencyType);
-    return selected ? selected.subTypes : [];
-  };
-
-  // Get the display name for the emergency (use custom if "Other" selected)
-  const getEmergencyDisplay = () => {
-    return subType === "Other" ? customSubType : subType;
-  };
+  }
 
   if (isConfirmed) {
     return (
       <div className="min-h-screen flex justify-center items-center bg-green-50 p-5 text-center">
         <div className="bg-white px-10 py-14 rounded-3xl shadow-2xl max-w-lg w-full border-4 border-green-500">
-
-          {/* Animated Icon */}
           <div className="relative w-28 h-28 mx-auto mb-6">
             <div className="absolute inset-0 rounded-full border-4 border-green-500 animate-ping opacity-75"></div>
-            <div className="relative flex items-center justify-center h-full text-6xl">🚑</div>
+            <div className="relative flex items-center justify-center h-full text-6xl">??</div>
           </div>
 
           <h2 className="text-4xl font-black mb-5 text-gray-900 tracking-wide">HELP IS ON THE WAY</h2>
@@ -95,23 +155,22 @@ function EmergencyConfirm({ onCancel }) {
             Emergency services have received your alert and are heading to your location.
           </p>
 
-          {/* Status Box */}
           <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl mb-8 border-2 border-green-200">
             <div className="text-sm text-gray-500 mb-2">Emergency Type</div>
-            <div className="text-xl font-black text-green-600 mb-3">{getEmergencyDisplay()}</div>
+            <div className="text-xl font-black text-green-600 mb-2">{getEmergencyDisplay()}</div>
+            {incidentCode && <div className="text-xs font-semibold text-gray-700 mb-2">Reference: {incidentCode}</div>}
             <div className="text-sm text-gray-600 bg-white/60 rounded-lg py-2 px-3">
-              📍 Ambulance dispatched to your location
+              Dispatcher received your report with details
             </div>
           </div>
 
-          {/* Info Grid */}
           <div className="grid grid-cols-2 gap-3 mb-8">
             <div className="bg-gray-50 p-4 rounded-xl flex flex-col items-center gap-1 text-sm font-semibold text-gray-500">
-              <span className="text-xl">📍</span> 
+              <span className="text-xl">??</span>
               <span className="text-xs text-center">{userLocation}</span>
             </div>
             <div className="bg-gray-50 p-4 rounded-xl flex items-center gap-2 text-sm font-semibold text-gray-500">
-              <span className="text-xl">📞</span> Stay Available
+              <span className="text-xl">??</span> Stay Available
             </div>
           </div>
 
@@ -132,13 +191,12 @@ function EmergencyConfirm({ onCancel }) {
         className="self-start mb-3 bg-transparent border-none cursor-pointer text-gray-500 text-base hover:text-gray-700"
         onClick={onCancel}
       >
-        ← Back
+        Back
       </button>
 
       <div className="bg-white rounded-2xl p-6 shadow-lg max-w-lg w-full">
         <h2 className="text-2xl font-extrabold mb-5">Select Emergency Type</h2>
 
-        {/* Main Emergency Types */}
         <div className="flex flex-col gap-3 mb-6">
           {types.map((type) => {
             const active = emergencyType === type.key;
@@ -146,14 +204,12 @@ function EmergencyConfirm({ onCancel }) {
               <div
                 key={type.key}
                 className={`flex items-center p-5 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${
-                  active
-                    ? "border-red-500 bg-red-50"
-                    : "border-gray-200 bg-white hover:border-gray-300"
+                  active ? "border-red-500 bg-red-50" : "border-gray-200 bg-white hover:border-gray-300"
                 }`}
                 onClick={() => {
                   setEmergencyType(type.key);
-                  setSubType(""); // Reset sub-type when changing main type
-                  setCustomSubType(""); // Reset custom input
+                  setSubType("");
+                  setCustomSubType("");
                 }}
               >
                 <span className="text-3xl mr-4">{type.icon}</span>
@@ -163,7 +219,6 @@ function EmergencyConfirm({ onCancel }) {
           })}
         </div>
 
-        {/* Sub-Types (shown when main type is selected) */}
         {emergencyType && (
           <div className="mb-6">
             <label className="block text-xs font-bold mb-3 text-gray-500 uppercase tracking-wider">
@@ -180,9 +235,7 @@ function EmergencyConfirm({ onCancel }) {
                   }`}
                   onClick={() => {
                     setSubType(sub);
-                    if (sub !== "Other") {
-                      setCustomSubType(""); // Clear custom input if not "Other"
-                    }
+                    if (sub !== "Other") setCustomSubType("");
                   }}
                 >
                   {sub}
@@ -190,7 +243,6 @@ function EmergencyConfirm({ onCancel }) {
               ))}
             </div>
 
-            {/* Custom Emergency Input (shown when "Other" is selected) */}
             {subType === "Other" && (
               <div className="mt-4">
                 <label className="block text-xs font-bold mb-2 text-gray-500 uppercase tracking-wider">
@@ -208,6 +260,29 @@ function EmergencyConfirm({ onCancel }) {
           </div>
         )}
 
+        <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-bold mb-2 text-gray-500 uppercase tracking-wider">Your Name (Optional)</label>
+            <input
+              type="text"
+              className="w-full p-3 rounded-xl border border-gray-200 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
+              placeholder="e.g. Jane Doe"
+              value={reporterName}
+              onChange={(e) => setReporterName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold mb-2 text-gray-500 uppercase tracking-wider">Phone (Optional)</label>
+            <input
+              type="tel"
+              className="w-full p-3 rounded-xl border border-gray-200 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
+              placeholder="e.g. +2547..."
+              value={reporterPhone}
+              onChange={(e) => setReporterPhone(e.target.value)}
+            />
+          </div>
+        </div>
+
         <div className="mb-5">
           <label className="block text-xs font-bold mb-2 text-gray-500 uppercase tracking-wider">
             Location Notes (Optional)
@@ -221,12 +296,16 @@ function EmergencyConfirm({ onCancel }) {
           />
         </div>
 
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+        )}
+
         <button
           className="w-full py-5 rounded-xl bg-red-600 text-white text-base font-bold border-none cursor-pointer shadow-lg hover:bg-red-700 transition duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
           onClick={confirmEmergency}
-          disabled={!emergencyType || !subType || (subType === "Other" && !customSubType.trim())}
+          disabled={sending || !emergencyType || !subType || (subType === "Other" && !customSubType.trim())}
         >
-          Confirm Emergency →
+          {sending ? "Submitting..." : "Confirm Emergency"}
         </button>
       </div>
     </div>
@@ -234,10 +313,10 @@ function EmergencyConfirm({ onCancel }) {
 }
 
 const types = [
-  { 
-    key: "Medical", 
-    label: "Medical Emergency", 
-    icon: "🩺",
+  {
+    key: "Medical",
+    label: "Medical Emergency",
+    icon: "??",
     subTypes: [
       "Severe Bleeding",
       "Unconscious/Fainted",
@@ -251,13 +330,13 @@ const types = [
       "Allergic Reaction",
       "Choking",
       "Poisoning",
-      "Other"
-    ]
+      "Other",
+    ],
   },
-  { 
-    key: "Accident", 
-    label: "Traffic Accident", 
-    icon: "🚗",
+  {
+    key: "Accident",
+    label: "Traffic Accident",
+    icon: "??",
     subTypes: [
       "Car Collision",
       "Motorcycle Accident",
@@ -267,13 +346,13 @@ const types = [
       "Head-On Collision",
       "Bus Accident",
       "Truck Accident",
-      "Other"
-    ]
+      "Other",
+    ],
   },
-  { 
-    key: "Fire", 
-    label: "Fire ", 
-    icon: "🔥",
+  {
+    key: "Fire",
+    label: "Fire",
+    icon: "??",
     subTypes: [
       "Building Fire",
       "Vehicle Fire",
@@ -283,8 +362,8 @@ const types = [
       "Smoke Inhalation",
       "Forest/Bush Fire",
       "Chemical Fire",
-      "Other"
-    ]
+      "Other",
+    ],
   },
 ];
 

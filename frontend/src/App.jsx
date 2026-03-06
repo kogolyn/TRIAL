@@ -213,6 +213,7 @@ function App() {
         {/* Public */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage setUser={setUser} />} />
+         <Route path="/register" element={<RegisterForm />} />
 
         {/* Protected */}
         <Route
