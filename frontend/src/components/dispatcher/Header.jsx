@@ -1,9 +1,13 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Header() {
+  const navigate = useNavigate();
+
   function handleLogout() {
-    // TODO: wire up to your auth/logout logic
-    alert('Logged out');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
   }
 
   return (
