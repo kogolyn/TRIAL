@@ -6,7 +6,9 @@ function EmergencyConfirm({ onCancel }) {
   const [customSubType, setCustomSubType] = useState("");
   const [locationNotes, setLocationNotes] = useState("");
   const [userLocation, setUserLocation] = useState("Detecting location...");
+  const [coordinates, setCoordinates] = useState({ latitude: null, longitude: null }); // ← NEW
   const [isConfirmed, setIsConfirmed] = useState(false);
+  const [loading, setLoading] = useState(false); // ← NEW
 
   // Get user's location
   useEffect(() => {
@@ -14,6 +16,8 @@ function EmergencyConfirm({ onCancel }) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
+          setCoordinates({ latitude, longitude }); // ← SAVE COORDINATES
+          
           try {
             const res = await fetch(
               `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
@@ -37,7 +41,11 @@ function EmergencyConfirm({ onCancel }) {
     }
   }, []);
 
-  const confirmEmergency = () => {
+  // ═══════════════════════════════════════════════════════════
+  // SEND TO BACKEND
+  // ═══════════════════════════════════════════════════════════
+  const confirmEmergency = async () => {
+    // Validation
     if (!emergencyType) {
       alert("Please select an emergency type");
       return;
@@ -50,7 +58,45 @@ function EmergencyConfirm({ onCancel }) {
       alert("Please describe the emergency");
       return;
     }
-    setIsConfirmed(true);
+
+    setLoading(true); // Show loading state
+
+    try {
+      // Send to backend
+      const response = await fetch('http://localhost:5000/api/emergency', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          emergencyType,
+          subType: subType === 'Other' ? customSubType : subType,
+          customSubType: subType === 'Other' ? customSubType : '',
+          location: {
+            latitude: coordinates.latitude || -0.2827,  // Use actual coordinates
+            longitude: coordinates.longitude || 36.0800,
+            address: userLocation,
+            notes: locationNotes
+          },
+          userPhone: '' // Add phone field if you collect it
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        console.log('✅ Emergency created:', data.data);
+        setIsConfirmed(true); // Show success page
+      } else {
+        alert('Error: ' + data.message);
+        setLoading(false);
+      }
+
+    } catch (error) {
+      console.error('❌ Error sending emergency:', error);
+      alert('Failed to send emergency request. Please try again.');
+      setLoading(false);
+    }
   };
 
   const handleReset = () => {
@@ -224,9 +270,9 @@ function EmergencyConfirm({ onCancel }) {
         <button
           className="w-full py-5 rounded-xl bg-red-600 text-white text-base font-bold border-none cursor-pointer shadow-lg hover:bg-red-700 transition duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
           onClick={confirmEmergency}
-          disabled={!emergencyType || !subType || (subType === "Other" && !customSubType.trim())}
+          disabled={!emergencyType || !subType || (subType === "Other" && !customSubType.trim()) || loading}
         >
-          Confirm Emergency →
+          {loading ? 'Sending...' : 'Confirm Emergency →'}
         </button>
       </div>
     </div>

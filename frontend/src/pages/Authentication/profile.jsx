@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 
 function Profile() {
   const [user, setUser] = useState(null);
@@ -7,8 +6,10 @@ function Profile() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/auth/profile");
-        setUser(res.data);
+        const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/profile`);
+        if (!res.ok) throw new Error("Failed to load profile");
+        const data = await res.json();
+        setUser(data);
       } catch (err) {
         alert("Failed to load profile");
       }

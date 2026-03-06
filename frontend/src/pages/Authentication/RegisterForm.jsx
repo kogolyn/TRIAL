@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 function RegisterForm() {
@@ -32,17 +31,18 @@ function RegisterForm() {
   setLoading(true);
 
   try {
-    await axios.post("http://localhost:5000/users/signup", {
-      name,
-      email,
-      password,
-      role,
+    const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/users/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password, role }),
     });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Registration failed");
     alert("Registration successful! Please log in.");
     console.log("User registered successfully");
     navigate("/login");
   } catch (err) {
-    setError(err.response?.data?.message || "Registration failed");
+    setError(err.message || "Registration failed");
   } finally {
     setLoading(false);
   }
@@ -118,7 +118,7 @@ function RegisterForm() {
               ))}
             </select>
           </div>
-        )} */}
+        )} }
 
         {/* Password */}
         <div>
