@@ -1,34 +1,147 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function EmergencyConfirm({ onCancel }) {
   const [emergencyType, setEmergencyType] = useState("");
+  const [subType, setSubType] = useState("");
+  const [customSubType, setCustomSubType] = useState("");
+  const [reporterName, setReporterName] = useState("");
+  const [reporterPhone, setReporterPhone] = useState("");
   const [locationNotes, setLocationNotes] = useState("");
+  const [userLocation, setUserLocation] = useState("Detecting location...");
+  const [coordinates, setCoordinates] = useState({ lat: -0.3031, lng: 36.08 });
   const [isConfirmed, setIsConfirmed] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const [incidentCode, setIncidentCode] = useState("");
 
-  const confirmEmergency = () => {
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          setCoordinates({ lat: latitude, lng: longitude });
+
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`,
+            );
+            const data = await res.json();
+            const address = data.address || {};
+            const area =
+              address.suburb ||
+              address.neighbourhood ||
+              address.village ||
+              address.town ||
+              address.city ||
+              "Unknown area";
+            setUserLocation(area);
+          } catch {
+            setUserLocation("Location unavailable");
+          }
+        },
+        () => setUserLocation("Location access denied"),
+      );
+    }
+  }, []);
+
+  function resolveSeverity(type, detail) {
+    const criticalKeywords = ["heart", "stroke", "unconscious", "severe bleeding", "multiple vehicles", "gas explosion"];
+    const text = `${type} ${detail}`.toLowerCase();
+    if (criticalKeywords.some((kw) => text.includes(kw))) return "critical";
+    if (type === "Fire") return "urgent";
+    if (type === "Accident") return "urgent";
+    return "moderate";
+  }
+
+  function resolvePriority(severity) {
+    if (severity === "critical") return "critical";
+    if (severity === "urgent") return "high";
+    if (severity === "minor") return "low";
+    return "normal";
+  }
+
+  function getSubTypes() {
+    const selected = types.find((t) => t.key === emergencyType);
+    return selected ? selected.subTypes : [];
+  }
+
+  function getEmergencyDisplay() {
+    return subType === "Other" ? customSubType : subType;
+  }
+
+  async function confirmEmergency() {
     if (!emergencyType) {
       alert("Please select an emergency type");
       return;
     }
-    setIsConfirmed(true);
-  };
+    if (!subType) {
+      alert("Please specify the emergency details");
+      return;
+    }
+    if (subType === "Other" && !customSubType.trim()) {
+      alert("Please describe the emergency");
+      return;
+    }
 
-  const handleReset = () => {
+    const detail = subType === "Other" ? customSubType.trim() : subType;
+    const severity = resolveSeverity(emergencyType, detail);
+    const priority = resolvePriority(severity);
+
+    const payload = {
+      reporterName: reporterName.trim() || "Public Reporter",
+      reporterPhone: reporterPhone.trim(),
+      condition: `${emergencyType}: ${detail}`,
+      description: locationNotes.trim() ? `${detail}. Notes: ${locationNotes.trim()}` : detail,
+      severity,
+      priority,
+      location: {
+        lat: coordinates.lat,
+        lng: coordinates.lng,
+        address: userLocation,
+      },
+    };
+
+    try {
+      setSending(true);
+      setError("");
+      const res = await fetch(`${API_BASE_URL}/dispatcher/incidents/report`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to report emergency");
+      setIncidentCode(data?.id || "");
+      setIsConfirmed(true);
+    } catch (err) {
+      setError(err.message || "Failed to submit emergency report");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function handleReset() {
     setIsConfirmed(false);
     setEmergencyType("");
+    setSubType("");
+    setCustomSubType("");
+    setReporterName("");
+    setReporterPhone("");
     setLocationNotes("");
+    setError("");
+    setIncidentCode("");
     onCancel();
-  };
+  }
 
   if (isConfirmed) {
     return (
       <div className="min-h-screen flex justify-center items-center bg-green-50 p-5 text-center">
         <div className="bg-white px-10 py-14 rounded-3xl shadow-2xl max-w-lg w-full border-4 border-green-500">
-
-          {/* Animated Icon */}
           <div className="relative w-28 h-28 mx-auto mb-6">
             <div className="absolute inset-0 rounded-full border-4 border-green-500 animate-ping opacity-75"></div>
-            <div className="relative flex items-center justify-center h-full text-6xl">🚑</div>
+            <div className="relative flex items-center justify-center h-full text-6xl">??</div>
           </div>
 
           <h2 className="text-4xl font-black mb-5 text-gray-900 tracking-wide">HELP IS ON THE WAY</h2>
@@ -42,27 +155,27 @@ function EmergencyConfirm({ onCancel }) {
             Emergency services have received your alert and are heading to your location.
           </p>
 
-          {/* ETA Box */}
-          <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl mb-8 flex items-center gap-4 border-2 border-green-200 text-left">
-            <span className="text-4xl">⏱</span>
-            <div>
-              <div className="text-sm text-gray-500 mb-1">Estimated Arrival</div>
-              <div className="text-2xl font-black text-green-600">4 minutes</div>
+          <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl mb-8 border-2 border-green-200">
+            <div className="text-sm text-gray-500 mb-2">Emergency Type</div>
+            <div className="text-xl font-black text-green-600 mb-2">{getEmergencyDisplay()}</div>
+            {incidentCode && <div className="text-xs font-semibold text-gray-700 mb-2">Reference: {incidentCode}</div>}
+            <div className="text-sm text-gray-600 bg-white/60 rounded-lg py-2 px-3">
+              Dispatcher received your report with details
             </div>
           </div>
 
-          {/* Info Grid */}
           <div className="grid grid-cols-2 gap-3 mb-8">
-            <div className="bg-gray-50 p-4 rounded-xl flex items-center gap-2 text-sm font-semibold text-gray-500">
-              <span className="text-xl">📍</span> Location Confirmed
+            <div className="bg-gray-50 p-4 rounded-xl flex flex-col items-center gap-1 text-sm font-semibold text-gray-500">
+              <span className="text-xl">??</span>
+              <span className="text-xs text-center">{userLocation}</span>
             </div>
             <div className="bg-gray-50 p-4 rounded-xl flex items-center gap-2 text-sm font-semibold text-gray-500">
-              <span className="text-xl">📞</span> Stay Available
+              <span className="text-xl">??</span> Stay Available
             </div>
           </div>
 
           <button
-            className="bg-none border-none text-green-500 cursor-pointer text-base font-semibold underline"
+            className="bg-none border-none text-green-500 cursor-pointer text-base font-semibold underline hover:text-green-600"
             onClick={handleReset}
           >
             Report another incident
@@ -75,10 +188,10 @@ function EmergencyConfirm({ onCancel }) {
   return (
     <div className="min-h-screen p-5 font-sans bg-green-50 flex flex-col justify-center items-center">
       <button
-        className="self-start mb-3 bg-transparent border-none cursor-pointer text-gray-500 text-base"
+        className="self-start mb-3 bg-transparent border-none cursor-pointer text-gray-500 text-base hover:text-gray-700"
         onClick={onCancel}
       >
-        ← Back
+        Back
       </button>
 
       <div className="bg-white rounded-2xl p-6 shadow-lg max-w-lg w-full">
@@ -91,11 +204,13 @@ function EmergencyConfirm({ onCancel }) {
               <div
                 key={type.key}
                 className={`flex items-center p-5 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${
-                  active
-                    ? "border-red-500 bg-red-50 scale-102"
-                    : "border-gray-200 bg-white"
+                  active ? "border-red-500 bg-red-50" : "border-gray-200 bg-white hover:border-gray-300"
                 }`}
-                onClick={() => setEmergencyType(type.key)}
+                onClick={() => {
+                  setEmergencyType(type.key);
+                  setSubType("");
+                  setCustomSubType("");
+                }}
               >
                 <span className="text-3xl mr-4">{type.icon}</span>
                 <span className="text-base font-semibold text-gray-900">{type.label}</span>
@@ -104,24 +219,93 @@ function EmergencyConfirm({ onCancel }) {
           })}
         </div>
 
+        {emergencyType && (
+          <div className="mb-6">
+            <label className="block text-xs font-bold mb-3 text-gray-500 uppercase tracking-wider">
+              Specify Emergency Details *
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {getSubTypes().map((sub) => (
+                <button
+                  key={sub}
+                  className={`p-3 rounded-lg border-2 text-sm font-semibold transition-all ${
+                    subType === sub
+                      ? "border-red-500 bg-red-50 text-red-700"
+                      : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                  }`}
+                  onClick={() => {
+                    setSubType(sub);
+                    if (sub !== "Other") setCustomSubType("");
+                  }}
+                >
+                  {sub}
+                </button>
+              ))}
+            </div>
+
+            {subType === "Other" && (
+              <div className="mt-4">
+                <label className="block text-xs font-bold mb-2 text-gray-500 uppercase tracking-wider">
+                  Describe the Emergency *
+                </label>
+                <input
+                  type="text"
+                  className="w-full p-3 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
+                  placeholder="e.g. Electric shock, Dog bite, Fall from height..."
+                  value={customSubType}
+                  onChange={(e) => setCustomSubType(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-bold mb-2 text-gray-500 uppercase tracking-wider">Your Name (Optional)</label>
+            <input
+              type="text"
+              className="w-full p-3 rounded-xl border border-gray-200 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
+              placeholder="e.g. Jane Doe"
+              value={reporterName}
+              onChange={(e) => setReporterName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold mb-2 text-gray-500 uppercase tracking-wider">Phone (Optional)</label>
+            <input
+              type="tel"
+              className="w-full p-3 rounded-xl border border-gray-200 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
+              placeholder="e.g. +2547..."
+              value={reporterPhone}
+              onChange={(e) => setReporterPhone(e.target.value)}
+            />
+          </div>
+        </div>
+
         <div className="mb-5">
           <label className="block text-xs font-bold mb-2 text-gray-500 uppercase tracking-wider">
             Location Notes (Optional)
           </label>
           <textarea
             className="w-full p-3 rounded-xl border border-gray-200 text-sm resize-none outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
-            placeholder="e.g. near the main gate, second floor"
+            placeholder="e.g. near the main gate, second floor, blue building"
             value={locationNotes}
             onChange={(e) => setLocationNotes(e.target.value)}
             rows={3}
           />
         </div>
 
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+        )}
+
         <button
-          className="w-full py-5 rounded-xl bg-red-600 text-white text-base font-bold border-none cursor-pointer shadow-lg hover:bg-red-700 transition duration-200"
+          className="w-full py-5 rounded-xl bg-red-600 text-white text-base font-bold border-none cursor-pointer shadow-lg hover:bg-red-700 transition duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
           onClick={confirmEmergency}
+          disabled={sending || !emergencyType || !subType || (subType === "Other" && !customSubType.trim())}
         >
-          Confirm Emergency →
+          {sending ? "Submitting..." : "Confirm Emergency"}
         </button>
       </div>
     </div>
@@ -129,9 +313,58 @@ function EmergencyConfirm({ onCancel }) {
 }
 
 const types = [
-  { key: "Medical", label: "Medical Emergency", icon: "🩺" },
-  { key: "Accident", label: "Traffic Accident", icon: "🚗" },
-  { key: "Fire", label: "Fire / Smoke", icon: "🔥" },
+  {
+    key: "Medical",
+    label: "Medical Emergency",
+    icon: "??",
+    subTypes: [
+      "Severe Bleeding",
+      "Unconscious/Fainted",
+      "Heart Attack",
+      "Stroke",
+      "Snake Bite",
+      "Difficulty Breathing",
+      "Seizure",
+      "Childbirth/Delivery",
+      "Severe Burns",
+      "Allergic Reaction",
+      "Choking",
+      "Poisoning",
+      "Other",
+    ],
+  },
+  {
+    key: "Accident",
+    label: "Traffic Accident",
+    icon: "??",
+    subTypes: [
+      "Car Collision",
+      "Motorcycle Accident",
+      "Pedestrian Hit",
+      "Multiple Vehicles",
+      "Vehicle Rollover",
+      "Head-On Collision",
+      "Bus Accident",
+      "Truck Accident",
+      "Other",
+    ],
+  },
+  {
+    key: "Fire",
+    label: "Fire",
+    icon: "??",
+    subTypes: [
+      "Building Fire",
+      "Vehicle Fire",
+      "Electrical Fire",
+      "Kitchen Fire",
+      "Gas Explosion",
+      "Smoke Inhalation",
+      "Forest/Bush Fire",
+      "Chemical Fire",
+      "Other",
+    ],
+  },
 ];
 
 export default EmergencyConfirm;

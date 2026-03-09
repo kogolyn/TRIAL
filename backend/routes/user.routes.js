@@ -2,6 +2,7 @@ import express from "express";
 import bcrypt from "bcrypt";
 const router = express.Router();
 import User from "../models/user.model.js";
+import { createToken } from "../utils/token.js";
 
 
 
@@ -15,27 +16,80 @@ router.get("/", async (req, res) => {
     // res.send("Users API")
   } else {
     res.status(500).json({ message: "an error occured" });
-  }
+  } 
 });
 
 // Create a new user
-router.post("/", async (req, res) => {
+router.post("/signup", async (req, res) => {
   try {
-    const email = req.body.email;
+    const {name, email, password, role} = req.body;
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
       res.status(400).json({ message: "user with that email exists" });
+      return;
     }
-    const newUser = await User.create(req.body);
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await User.create({name, email, password: hashedPassword, role});
+    const token = createToken({
+      id: newUser._id.toString(),
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+    });
 
     console.log(`${req.body.name} user created successfully`);
-    res.status(200).json(newUser);
+    res.status(201).json({
+      message: "User created successfully",
+      token,
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+      },
+    });
 
     return;
   } catch (error) {
     console.log(error.message);
-    res.status(500).json(error);
+    res.status(500).json({message: "an error occurred while creating user"});
+  }
+});
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid email or password" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid email or password" });
+    }
+
+    // Include ROLE in the response
+    const token = createToken({
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    });
+
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
   }
 });
 
