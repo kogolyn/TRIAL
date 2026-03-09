@@ -92,6 +92,7 @@ function formatIncident(incident) {
     description: incident.description,
     reporterName: incident.reporterName,
     reporterPhone: incident.reporterPhone,
+    victimReport: incident.victimReport || null,
     assignedAmbulance: incident.assignedAmbulance
       ? {
           id: incident.assignedAmbulance._id?.toString?.() || incident.assignedAmbulance.toString(),

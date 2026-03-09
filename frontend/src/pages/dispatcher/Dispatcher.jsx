@@ -112,10 +112,10 @@ export default function Dispatcher() {
                 >
                     <option value="">-- Select Alert --</option>
                     {incidents
-                        .filter(inc => inc.status === 'pending' || inc.status === 'verified')
+                        .filter(inc => inc.status === 'Pending')
                         .map(inc => (
                             <option key={inc.recordId} value={inc.recordId}>
-                                {inc.recordId} - {inc.patientInfo?.condition || 'Unknown'} - {inc.location?.address || 'No address'} ({inc.status})
+                                {inc.id} - {inc.victimReport?.emergencyType || inc.condition || 'Unknown'} - {inc.location || 'No address'} ({inc.status})
                             </option>
                         ))
                     }
@@ -151,20 +151,20 @@ export default function Dispatcher() {
                         <div className="p-4 border-b border-gray-200 bg-gray-50">
                             <h3 className="text-lg font-bold text-gray-800">
                                 Ongoing Incidents ({incidents.filter(inc => 
-                                    inc.status === 'assigned' || 
-                                    inc.status === 'en_route' || 
-                                    inc.status === 'arrived' ||
-                                    inc.status === 'transporting'
+                                    inc.status === 'Assigned' || 
+                                    inc.status === 'En Route' || 
+                                    inc.status === 'Arrived' ||
+                                    inc.status === 'Transporting'
                                 ).length})
                             </h3>
                         </div>
                         <div className="flex-1 overflow-y-auto">
                             <ActiveIncidents
                                 incidents={incidents.filter(inc => 
-                                    inc.status === 'assigned' || 
-                                    inc.status === 'en_route' || 
-                                    inc.status === 'arrived' ||
-                                    inc.status === 'transporting'
+                                    inc.status === 'Assigned' || 
+                                    inc.status === 'En Route' || 
+                                    inc.status === 'Arrived' ||
+                                    inc.status === 'Transporting'
                                 )}
                                 selectedIncidentId={selectedIncidentId}
                                 onSelectIncident={setSelectedIncidentId}

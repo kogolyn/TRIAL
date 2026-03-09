@@ -26,6 +26,11 @@ const emergencySchema = new mongoose.Schema(
       enum: ['Pending', 'Dispatched', 'EnRoute', 'Arrived', 'Completed', 'Cancelled'],
       default: 'Pending'
     },
+    dispatcherIncidentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Incident',
+      default: null
+    },
     assignedAmbulance: { type: String, default: null },
     assignedHospital: { type: String, default: null },
     userPhone: { type: String, default: '' }

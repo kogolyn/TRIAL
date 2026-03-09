@@ -13,7 +13,7 @@ import emergencyRoutes from "./routes/emergency.js";
 
 const app = express();
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const PORT = process.env.PORT || 5000;
 

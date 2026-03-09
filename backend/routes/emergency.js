@@ -1,5 +1,5 @@
 import express from 'express';
-import * as emergencyController from '../controllers/emergencycontroller.js';
+import * as emergencyController from '../Controllers/emergencycontroller.js';
 
 const router = express.Router();
 

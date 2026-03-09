@@ -129,6 +129,12 @@ const incidentSchema = new mongoose.Schema(
       timeToArriveSeconds: { type: Number, default: null },
       totalResolutionSeconds: { type: Number, default: null },
     },
+    victimReport: {
+      emergencyType: { type: String, default: "" },
+      emergencyDetail: { type: String, default: "" },
+      locationNotes: { type: String, default: "" },
+      source: { type: String, default: "" },
+    },
     notes: {
       type: [incidentNoteSchema],
       default: [],
