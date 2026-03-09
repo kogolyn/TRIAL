@@ -8,6 +8,10 @@ import Navbar        from './components/Admin/Navbar';
 import Dashboard     from './pages/Admin/Dashboard';
 import Registration  from './pages/Admin/Registration';
 import Verification  from './pages/Admin/Verification';
+import Analytics     from './pages/Admin/Analytics';
+import SystemLogs          from './pages/Admin/Logs';
+import Tracking             from './pages/Admin/Tracking';
+import Settings             from './pages/Admin/Settings';
 
 //  AUTH & EMERGENCY PAGES ─────────────────────────────────────────
 import EmergencyRequest from './pages/Landing/EmergencyRequest';
@@ -138,7 +142,8 @@ function AdminApp() {
     verification: { title: 'Verification Center',       subtitle: 'Review and verify pending registrations' },
     analytics:    { title: 'System Analytics',          subtitle: 'Detailed analytics and reports' },
     settings:     { title: 'System Settings',           subtitle: 'Configure system settings and preferences' },
-    help:         { title: 'Help & Support',             subtitle: 'Documentation and support resources' },
+    help:         { title: 'Logs',             subtitle: 'System logs and activity tracking' },
+
   };
 
   const current = pageInfo[activeSection] || pageInfo.dashboard;
@@ -148,6 +153,10 @@ function AdminApp() {
       case 'dashboard':    return <Dashboard />;
       case 'registration': return <Registration />;
       case 'verification': return <Verification />;
+      case 'analytics':    return <Analytics />;
+      case 'logs':     return <SystemLogs />;
+      case 'tracking': return <Tracking />;
+      case 'settings': return <Settings />;
       default:
         return (
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-12 text-center">
