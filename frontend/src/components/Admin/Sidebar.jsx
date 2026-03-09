@@ -35,7 +35,7 @@ const Sidebar = ({ activeSection, setActiveSection, sidebarOpen, setSidebarOpen 
       items: [
         { id: 'analytics', label: 'Analytics', icon: BarChart3, description: 'Reports & insights' },
         { id: 'settings', label: 'Settings', icon: Settings, description: 'System configuration' },
-        { id: 'help', label: 'Help & Support', icon: HelpCircle, description: 'Documentation' },
+        { id: 'logs', label: 'Logs', icon: HelpCircle, description: 'System logs and activity tracking' },
       ]
     }
   ];
