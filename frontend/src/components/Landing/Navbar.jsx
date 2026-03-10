@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-function Navbar({ onProceed }) {
+function Navbar({ onLogin, onRegister }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -13,11 +13,19 @@ function Navbar({ onProceed }) {
   };
 
   const handleLogin = () => {
+    if (onLogin) {
+      onLogin();
+      return;
+    }
     navigate('/login');
   };
 
   const handleRegister = () => {
-    navigate('/register');
+    if (onRegister) {
+      onRegister();
+      return;
+    }
+    navigate('/login?mode=register');
   };
 
   return (

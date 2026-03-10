@@ -6,6 +6,7 @@ function LoginForm({ setUser }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(""); // added error state
+  const [success, setSuccess] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,20 +20,30 @@ function LoginForm({ setUser }) {
       if (!res.ok) throw new Error(data.message || "Login failed. Check your credentials.");
       const loggedInUser = data.user;
       const token = data.token;
-      alert(data.message);
       console.log(`Login successful:`, loggedInUser);
  
+      setError("");
+      setSuccess("Login successful");
+      setTimeout(() => setSuccess(""), 3000);
+
       // // 1. Save user to App state and LocalStorage
       setUser(loggedInUser);
       localStorage.setItem("user", JSON.stringify(loggedInUser));
       localStorage.setItem("token", token);
 
       // // 2. Navigate based on role
-      if (loggedInUser.role === "admin") navigate("/admin");
-      else if (loggedInUser.role === "dispatcher") navigate("/dispatcher");
-      else if (loggedInUser.role === "ambulance") navigate("/ambulance");
-      else navigate("/dashboard");
+      const target =
+        loggedInUser.role === "admin"
+          ? "/admin"
+          : loggedInUser.role === "dispatcher"
+          ? "/dispatcher"
+          : loggedInUser.role === "ambulance"
+          ? "/ambulance"
+          : "/dashboard";
+
+      setTimeout(() => navigate(target), 800);
     } catch (err) {
+      setSuccess("");
       setError(err.message || "Login failed. Check your credentials.");
     }
   };
@@ -73,6 +84,12 @@ function LoginForm({ setUser }) {
       >
         Sign In
       </button>
+
+      {success && (
+        <p className="text-green-600 text-sm mt-3 text-center">
+          {success}
+        </p>
+      )}
     </form>
   );
 }

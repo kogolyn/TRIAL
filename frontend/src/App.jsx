@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // Admin COMPONENTS ───────────────────────────────────────────────────────────
@@ -49,13 +49,25 @@ function LandingPage() {
   const navigate = useNavigate();
   return (
     <div style={{ minHeight: '100vh', width: '100%' }}>
-      <EmergencyRequest onProceed={() => navigate('/login')} />
+      <EmergencyRequest
+        onLogin={() => navigate('/login')}
+        onRegister={() => navigate('/login?mode=register')}
+      />
     </div>
   );
 }
 
 function LoginPage({ setUser }) {
-  const [showLogin, setShowLogin] = useState(true);
+  const location = useLocation();
+  const [showLogin, setShowLogin] = useState(() => {
+    const mode = new URLSearchParams(location.search).get('mode');
+    return mode !== 'register';
+  });
+
+  useEffect(() => {
+    const mode = new URLSearchParams(location.search).get('mode');
+    setShowLogin(mode !== 'register');
+  }, [location.search]);
 
   return (
     <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
@@ -222,7 +234,7 @@ function App() {
         {/* Public */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage setUser={setUser} />} />
-         <Route path="/register" element={<RegisterForm />} />
+        <Route path="/register" element={<Navigate to="/login?mode=register" replace />} />
 
         {/* Protected */}
         <Route
