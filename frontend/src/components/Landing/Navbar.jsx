@@ -1,8 +1,6 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-function Navbar({ onLogin, onRegister }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+function Navbar() {
   const navigate = useNavigate();
 
   const scrollToSection = (sectionId) => {
@@ -13,19 +11,11 @@ function Navbar({ onLogin, onRegister }) {
   };
 
   const handleLogin = () => {
-    if (onLogin) {
-      onLogin();
-      return;
-    }
     navigate('/login');
   };
 
   const handleRegister = () => {
-    if (onRegister) {
-      onRegister();
-      return;
-    }
-    navigate('/login?mode=register');
+    navigate('/register');
   };
 
   return (

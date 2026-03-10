@@ -10,7 +10,8 @@ function Profile() {
         if (!res.ok) throw new Error("Failed to load profile");
         const data = await res.json();
         setUser(data);
-      } catch (err) {
+      } catch (error) {
+        console.error(error);
         alert("Failed to load profile");
       }
     };

@@ -137,11 +137,11 @@ const Analytics = () => {
   );
 };
 
-const KpiCard = ({ title, value, change, trend, icon: Icon, color }) => (
+const KpiCard = ({ title, value, change, trend, icon, color }) => (
   <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all hover:scale-105 group">
     <div className="flex items-center justify-between mb-4">
       <div className={`${color} p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform`}>
-        <Icon className="w-6 h-6 text-white" />
+        {React.createElement(icon, { className: "w-6 h-6 text-white" })}
       </div>
       <div className={`flex items-center space-x-1 text-sm font-semibold px-2 py-1 rounded-full ${trend === 'up' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
         {trend === 'up' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}

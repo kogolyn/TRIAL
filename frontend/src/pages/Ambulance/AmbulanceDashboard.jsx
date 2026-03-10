@@ -3,30 +3,75 @@ import { useNavigate } from 'react-router-dom';
 import NavigationMap from './NavigationMap';
 import EmergencyFacilities from './EmergencyFacilities';
 import DispatchComms from './DispatchComms';
+import NotificationCenter from '../../components/common/NotificationCenter';
+import useRoleNotifications from '../../hooks/useRoleNotifications';
+
+const DEFAULT_AMBULANCE = {
+  id: 'AMB-04',
+  status: 'Active Duty',
+  currentSpeed: 68,
+  lat: -0.2827,
+  lng: 36.08,
+};
+
+const DEFAULT_NAVIGATION = {
+  nextManeuver: 'Continue onto Oak Avenue',
+  distance: '400m',
+  destinationName: 'Central General',
+  timeToDestination: '4 min',
+  distanceToDestination: '1.8 km',
+};
+
+const DEFAULT_TRAFFIC = [
+  { type: 'congestion', location: '5th & Main', status: 'red' },
+  { type: 'clear', location: 'Express route clear via High St', status: 'green' },
+];
+
+const DEFAULT_FACILITIES = [
+  {
+    id: 1,
+    name: 'Central General',
+    level: 'Level 1',
+    beds: '4 beds avail.',
+    wait: '12m',
+    status: 'available',
+  },
+  {
+    id: 2,
+    name: 'City Medical Center',
+    level: 'Level 2',
+    beds: '0 beds avail.',
+    wait: '45m',
+    status: 'busy',
+  },
+  {
+    id: 3,
+    name: "St. Jude Children's",
+    level: 'Specialty',
+    beds: '12 beds avail.',
+    wait: '5m',
+    status: 'available',
+  },
+];
+
+const DEFAULT_INCIDENT = {
+  lat: -0.29,
+  lng: 36.07,
+};
+
+const DEFAULT_HOSPITAL = {
+  name: 'Central General',
+  lat: -0.3031,
+  lng: 36.08,
+};
 
 function AmbulanceDashboard() {
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user") || "null");
   
-  const [ambulance, setAmbulance] = useState({
-    id: 'AMB-04',
-    status: 'Active Duty',
-    currentSpeed: 68,
-    lat: -0.2827,
-    lng: 36.0800,
-  });
-
-  const [navigation, setNavigation] = useState({
-    nextManeuver: 'Continue onto Oak Avenue',
-    distance: '400m',
-    destinationName: 'Central General',
-    timeToDestination: '4 min',
-    distanceToDestination: '1.8 km',
-  });
-
-  const [trafficConditions, setTrafficConditions] = useState([
-    { type: 'congestion', location: '5th & Main', status: 'red' },
-    { type: 'clear', location: 'Express route clear via High St', status: 'green' },
-  ]);
+  const ambulance = DEFAULT_AMBULANCE;
+  const navigation = DEFAULT_NAVIGATION;
+  const trafficConditions = DEFAULT_TRAFFIC;
 
   // Patient data - editable
   const [patientData, setPatientData] = useState({
@@ -46,70 +91,38 @@ function AmbulanceDashboard() {
     }
   });
 
-  const [facilities, setFacilities] = useState([
-    {
-      id: 1,
-      name: 'Central General',
-      level: 'Level 1',
-      beds: '4 beds avail.',
-      wait: '12m',
-      status: 'available',
-    },
-    {
-      id: 2,
-      name: 'City Medical Center',
-      level: 'Level 2',
-      beds: '0 beds avail.',
-      wait: '45m',
-      status: 'busy',
-    },
-    {
-      id: 3,
-      name: "St. Jude Children's",
-      level: 'Specialty',
-      beds: '12 beds avail.',
-      wait: '5m',
-      status: 'available',
-    },
-  ]);
-
-  const [dispatchMessages, setDispatchMessages] = useState([
+  const facilities = DEFAULT_FACILITIES;
+  const [dispatchMessages] = useState([
     {
       id: 1,
       sender: 'Dispatch',
       code: 'J-1402',
       message: 'Congestion on 5th Ave. Map rerouted via Oak Avenue.',
-      timestamp: new Date(Date.now() - 300000),
+      timestamp: new Date('2024-02-17T14:35:00Z'),
     },
     {
       id: 2,
       sender: 'Central General',
       code: 'J-1258',
       message: 'ER prepped for REQ-001. Cardiac unit standby.',
-      timestamp: new Date(Date.now() - 120000),
+      timestamp: new Date('2024-02-17T14:38:00Z'),
     },
   ]);
-
-  const [incident] = useState({
-    lat: -0.2900,
-    lng: 36.0700,
-  });
-
-  const [hospital] = useState({
-    name: 'Central General',
-    lat: -0.3031,
-    lng: 36.0800,
-  });
+  const incident = DEFAULT_INCIDENT;
+  const hospital = DEFAULT_HOSPITAL;
 
   // Modal states
   const [showPatientCare, setShowPatientCare] = useState(false);
   const [showLiveVitals, setShowLiveVitals] = useState(false);
+  const notifications = useRoleNotifications(user, { ambulanceId: user?.ambulanceId || ambulance.id });
+
 
   const handleRadioDispatch = () => {
     console.log('Radio dispatch activated');
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("user");
     navigate('/login');
   };
 
@@ -253,6 +266,14 @@ function AmbulanceDashboard() {
 
         {/* Right Column */}
         <div className="flex flex-col gap-6">
+          <NotificationCenter
+            title="Ambulance Alerts"
+            connected={notifications.connected}
+            notifications={notifications.notifications}
+            unreadCount={notifications.unreadCount}
+            onAcknowledge={notifications.acknowledge}
+            onMarkAsRead={notifications.markAsRead}
+          />
           <EmergencyFacilities facilities={facilities} />
           <DispatchComms
             messages={dispatchMessages}

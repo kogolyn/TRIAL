@@ -13,10 +13,12 @@
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
+    "socket.io": "^4.8.1",
     "nodemon": "^3.1.14"
   },
   "scripts": {
-    "dev": "nodemon index.js",
+    "dev": "nodemon server.js",
+    "start": "node server.js",
     "seed:dispatcher": "node scripts/seed-dispatcher.js"
   },
   "keywords": [],

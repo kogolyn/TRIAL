@@ -73,12 +73,12 @@ const Dashboard = () => (
         </div>
         <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
           {recentActivities.map(a => {
-            const Icon = a.icon;
+            const iconEl = React.createElement(a.icon, { className: "w-4 h-4" });
             return (
               <div key={a.id} className="p-4 hover:bg-gray-50 transition-colors">
                 <div className="flex items-start space-x-3">
                   <div className={`p-2 rounded-lg ${activityStatusColor(a.status)}`}>
-                    <Icon className="w-4 h-4" />
+                    {iconEl}
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold text-sm text-gray-900">{a.title}</p>
@@ -137,11 +137,11 @@ const Dashboard = () => (
   </div>
 );
 
-const StatCard = ({ title, value, change, icon: Icon, color, trend }) => (
+const StatCard = ({ title, value, change, icon, color, trend }) => (
   <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all border border-gray-100 hover:scale-105 group">
     <div className="flex items-center justify-between mb-4">
       <div className={`${color} p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform`}>
-        <Icon className="w-6 h-6 text-white" />
+        {React.createElement(icon, { className: "w-6 h-6 text-white" })}
       </div>
       <div className={`flex items-center space-x-1 text-sm font-semibold px-2 py-1 rounded-full ${trend === 'up' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
         {trend === 'up' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
@@ -153,11 +153,11 @@ const StatCard = ({ title, value, change, icon: Icon, color, trend }) => (
   </div>
 );
 
-const MiniStat = ({ label, value, icon: Icon, color, bg }) => (
+const MiniStat = ({ label, value, icon, color, bg }) => (
   <div className="bg-white rounded-xl p-5 shadow-md border border-gray-100 hover:shadow-lg transition-all">
     <div className="flex items-center space-x-3">
       <div className={`${bg} p-2.5 rounded-lg`}>
-        <Icon className={`w-5 h-5 ${color}`} />
+        {React.createElement(icon, { className: `w-5 h-5 ${color}` })}
       </div>
       <div>
         <p className="text-xs text-gray-500 font-medium">{label}</p>

@@ -1,11 +1,61 @@
-import React, { useEffect, useState } from "react";
-import { AlertTriangle, MapPin, Clock, X, CheckCircle } from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
+import { AlertTriangle, MapPin, Clock, X, CheckCircle, ChevronDown } from "lucide-react";
 import { api } from "../../lib/api";
+import NotificationCenter from "../../components/common/NotificationCenter";
+import useRoleNotifications from "../../hooks/useRoleNotifications";
+
+const ALERTS = [
+  {
+    id: "AMB-2401", 
+    name: "John Doe", 
+    age: 52, 
+    gender: "M",
+    severity: "critical", 
+    condition: "Cardiac Arrest", 
+    eta: 4,
+    vitals: { hr: 145, bp: "180/110", spo2: 88, temp: 38.2 },
+    room: "Trauma Bay 2", 
+    unit: "Unit 23-Alpha",
+    notes: "CPR in progress, defibrillated x2, IV access established.",
+    distance: "2.3 km", 
+    team: "Cardiology",
+  },
+  {
+    id: "AMB-2402", 
+    name: "Jane Smith", 
+    age: 34, 
+    gender: "F",
+    severity: "urgent", 
+    condition: "Motor Vehicle Accident", 
+    eta: 8,
+    vitals: { hr: 98, bp: "130/85", spo2: 95, temp: 37.1 },
+    room: "ER-5", 
+    unit: "Unit 15-Bravo",
+    notes: "Multiple contusions, possible rib fracture. Alert and oriented.",
+    distance: "5.8 km", 
+    team: "Trauma",
+  },
+];
 
 const SEV = {
-  critical: { bar: "bg-red-600", badge: "bg-red-600 text-white", border: "border-red-200", label: "CRITICAL" },
-  urgent: { bar: "bg-orange-500", badge: "bg-orange-500 text-white", border: "border-orange-200", label: "URGENT" },
-  moderate: { bar: "bg-yellow-500", badge: "bg-yellow-500 text-white", border: "border-yellow-200", label: "MODERATE" },
+  critical: { 
+    bar: "bg-red-600", 
+    badge: "bg-red-600 text-white", 
+    border: "border-red-200", 
+    label: "CRITICAL" 
+  },
+  urgent: { 
+    bar: "bg-orange-500", 
+    badge: "bg-orange-500 text-white", 
+    border: "border-orange-200", 
+    label: "URGENT" 
+  },
+  moderate: { 
+    bar: "bg-yellow-500", 
+    badge: "bg-yellow-500 text-white", 
+    border: "border-yellow-200", 
+    label: "MODERATE" 
+  },
 };
 
 const TEAM_COLOR = {
@@ -17,12 +67,15 @@ const TEAM_COLOR = {
 
 function ETATimer({ eta }) {
   const [secs, setSecs] = useState(Math.max(0, eta * 60));
+  
   useEffect(() => {
     const t = setInterval(() => setSecs((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(t);
   }, []);
+  
   const m = Math.floor(secs / 60);
   const s = String(secs % 60).padStart(2, "0");
+  
   return (
     <div className="text-right">
       <p className={`text-2xl font-black tabular-nums ${secs < 120 ? "text-red-600 animate-pulse" : "text-slate-800"}`}>
@@ -34,6 +87,11 @@ function ETATimer({ eta }) {
 }
 
 export default function IncomingAlerts() {
+  // User and notifications (from stashed changes)
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const notifications = useRoleNotifications(user, { hospitalId: user?.hospitalId });
+
+  // State (combined from both versions)
   const [alerts, setAlerts] = useState([]);
   const [filter, setFilter] = useState("all");
   const [modal, setModal] = useState(null);
@@ -41,26 +99,26 @@ export default function IncomingAlerts() {
   const [paging, setPaging] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const toast = (msg, type = "success") => {
+  const toast = useCallback((msg, type = "success") => {
     setNotif({ msg, type });
     setTimeout(() => setNotif(null), 4000);
-  };
+  }, []);
 
-  const loadAlerts = async () => {
+  const loadAlerts = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await api.get("/hospital/alerts");
+      const data = await api.get("/api/hospitals/alerts");
       setAlerts(data.alerts || []);
     } catch (error) {
       toast(error.message || "Failed to load alerts", "error");
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     loadAlerts();
-  }, []);
+  }, [loadAlerts]);
 
   const patchAlert = (updated) => {
     setAlerts((rows) => rows.map((a) => (a.id === updated.id ? updated : a)));
@@ -70,7 +128,7 @@ export default function IncomingAlerts() {
   const pageTeam = async (a) => {
     try {
       setPaging(true);
-      const updated = await api.patch(`/hospital/alerts/${a.id}/page-team`);
+      const updated = await api.patch(`/api/hospitals/alerts/${a.id}/page-team`);
       patchAlert(updated);
       toast(`${a.team} paged for ${a.name}`);
     } catch (error) {
@@ -82,7 +140,7 @@ export default function IncomingAlerts() {
 
   const confirm = async (a) => {
     try {
-      const updated = await api.patch(`/hospital/alerts/${a.id}/confirm-room`, { room: a.room });
+      const updated = await api.patch(`/api/hospitals/alerts/${a.id}/confirm-room`, { room: a.room });
       patchAlert(updated);
       toast(`${a.name} confirmed -> ${updated.room}`);
       setModal(updated);
@@ -95,7 +153,7 @@ export default function IncomingAlerts() {
     const room = prompt("New room:", a.room);
     if (!room) return;
     try {
-      const updated = await api.patch(`/hospital/alerts/${a.id}/reassign-room`, { room });
+      const updated = await api.patch(`/api/hospitals/alerts/${a.id}/reassign-room`, { room });
       patchAlert(updated);
       toast(`${a.name} reassigned to ${room}`);
       setModal(updated);
@@ -108,8 +166,23 @@ export default function IncomingAlerts() {
 
   return (
     <div className="max-w-screen-xl mx-auto space-y-5">
+      {/* NotificationCenter - from stashed changes */}
+      <NotificationCenter
+        title="Hospital Alerts"
+        connected={notifications.connected}
+        notifications={notifications.notifications}
+        unreadCount={notifications.unreadCount}
+        onAcknowledge={notifications.acknowledge}
+        onMarkAsRead={notifications.markAsRead}
+      />
+
+      {/* Toast notification */}
       {notif && (
-        <div className={`fixed top-20 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-white min-w-64 ${notif.type === "success" ? "bg-green-600" : "bg-red-600"}`}>
+        <div 
+          className={`fixed top-20 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-white min-w-64 ${
+            notif.type === "success" ? "bg-green-600" : "bg-red-600"
+          }`}
+        >
           <CheckCircle className="w-5 h-5 flex-shrink-0" />
           <span className="text-sm font-medium">{notif.msg}</span>
           <button onClick={() => setNotif(null)}>
@@ -118,15 +191,19 @@ export default function IncomingAlerts() {
         </div>
       )}
 
+      {/* Header with filters */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
             <h2 className="text-lg font-bold text-slate-800">Live Incoming Alerts</h2>
           </div>
-          <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-full">{filtered.length} en route</span>
+          <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-full">
+            {filtered.length} en route
+          </span>
         </div>
 
+        {/* Filter buttons */}
         <div className="flex items-center gap-2">
           {["all", "critical", "urgent", "moderate"].map((f) => (
             <button
@@ -151,8 +228,11 @@ export default function IncomingAlerts() {
         </div>
       </div>
 
+      {/* Loading state */}
       {loading ? (
-        <div className="bg-white rounded-xl border border-slate-100 p-16 text-center text-slate-500">Loading alerts...</div>
+        <div className="bg-white rounded-xl border border-slate-100 p-16 text-center text-slate-500">
+          Loading alerts...
+        </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-100 p-16 text-center text-slate-400">
           <AlertTriangle className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -163,23 +243,30 @@ export default function IncomingAlerts() {
           {filtered.map((a) => {
             const s = SEV[a.severity] || SEV.moderate;
             return (
-              <div key={a.id} className={`bg-white rounded-xl border-2 ${s.border} shadow-sm overflow-hidden hover:shadow-md transition-all cursor-pointer`} onClick={() => setModal(a)}>
+              <div 
+                key={a.id} 
+                className={`bg-white rounded-xl border-2 ${s.border} shadow-sm overflow-hidden hover:shadow-md transition-all cursor-pointer`} 
+                onClick={() => setModal(a)}
+              >
                 <div className={`h-1.5 ${s.bar} w-full`} />
                 <div className="p-5">
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-bold text-slate-800 text-lg">{a.name}</h3>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded ${s.badge}`}>{s.label}</span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded ${s.badge}`}>
+                          {s.label}
+                        </span>
                       </div>
                       <p className="text-sm text-slate-500">
-                        {a.age}y - {a.gender} - {a.ambulanceId}
+                        {a.age}y - {a.gender} - {a.id}
                       </p>
                       <p className="text-sm font-semibold text-slate-700 mt-1">{a.condition}</p>
                     </div>
                     <ETATimer eta={a.eta} />
                   </div>
 
+                  {/* Vitals grid */}
                   <div className="grid grid-cols-4 gap-2 mb-4">
                     {[
                       { l: "HR", v: `${a.vitals.hr}`, warn: a.vitals.hr > 100 },
@@ -187,18 +274,27 @@ export default function IncomingAlerts() {
                       { l: "SpO2", v: `${a.vitals.spo2}%`, warn: a.vitals.spo2 < 92 },
                       { l: "Temp", v: `${a.vitals.temp}C`, warn: a.vitals.temp > 38 },
                     ].map((v) => (
-                      <div key={v.l} className={`rounded-lg p-2.5 text-center border ${v.warn ? "bg-red-50 border-red-200" : "bg-slate-50 border-slate-200"}`}>
+                      <div 
+                        key={v.l} 
+                        className={`rounded-lg p-2.5 text-center border ${
+                          v.warn ? "bg-red-50 border-red-200" : "bg-slate-50 border-slate-200"
+                        }`}
+                      >
                         <p className="text-xs text-slate-400 mb-0.5">{v.l}</p>
-                        <p className={`text-sm font-black ${v.warn ? "text-red-600" : "text-slate-800"}`}>{v.v}</p>
+                        <p className={`text-sm font-black ${v.warn ? "text-red-600" : "text-slate-800"}`}>
+                          {v.v}
+                        </p>
                       </div>
                     ))}
                   </div>
 
+                  {/* Paramedic notes */}
                   <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
                     <p className="text-xs font-bold text-amber-700 mb-0.5">Paramedic Notes</p>
                     <p className="text-xs text-slate-700 italic">{a.notes}</p>
                   </div>
 
+                  {/* Footer info */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 text-xs text-slate-500">
                       <span className="flex items-center gap-1">
@@ -211,8 +307,14 @@ export default function IncomingAlerts() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs font-bold px-2 py-1 rounded-lg ${TEAM_COLOR[a.team] || "bg-blue-100 text-blue-700"}`}>{a.team}</span>
-                      <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">{"->"} {a.room}</span>
+                      <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
+                        TEAM_COLOR[a.team] || "bg-blue-100 text-blue-700"
+                      }`}>
+                        {a.team}
+                      </span>
+                      <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">
+                        → {a.room}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -222,16 +324,24 @@ export default function IncomingAlerts() {
         </div>
       )}
 
+      {/* Modal */}
       {modal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setModal(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" 
+          onClick={() => setModal(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" 
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className={`${(SEV[modal.severity] || SEV.moderate).bar} h-2 rounded-t-2xl`} />
             <div className="p-6">
+              {/* Modal header */}
               <div className="flex justify-between items-start mb-5">
                 <div>
                   <h3 className="text-xl font-bold text-slate-800">{modal.name}</h3>
                   <p className="text-sm text-slate-500">
-                    {modal.ambulanceId} - {modal.age}y - {modal.gender} - {modal.condition}
+                    {modal.id} - {modal.age}y - {modal.gender} - {modal.condition}
                   </p>
                 </div>
                 <button onClick={() => setModal(null)}>
@@ -239,11 +349,12 @@ export default function IncomingAlerts() {
                 </button>
               </div>
 
+              {/* Modal info grid */}
               <div className="grid grid-cols-2 gap-3 mb-5 text-sm">
                 {[
                   ["ETA", `${modal.eta} minutes`],
                   ["Distance", modal.distance],
-                  ["Ambulance", modal.ambulanceId],
+                  ["Ambulance", modal.id],
                   ["Paramedic", modal.unit],
                   ["Assigned Room", modal.room],
                   ["Rec. Team", modal.team],
@@ -255,6 +366,7 @@ export default function IncomingAlerts() {
                 ))}
               </div>
 
+              {/* Live vitals */}
               <h4 className="text-sm font-bold text-slate-700 mb-2">Live Vitals</h4>
               <div className="grid grid-cols-2 gap-2 mb-5">
                 {[
@@ -263,18 +375,27 @@ export default function IncomingAlerts() {
                   ["SpO2", `${modal.vitals.spo2}%`, modal.vitals.spo2 < 92],
                   ["Temperature", `${modal.vitals.temp}C`, modal.vitals.temp > 38],
                 ].map(([l, v, warn]) => (
-                  <div key={l} className={`flex justify-between items-center p-2.5 rounded-lg border ${warn ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"}`}>
+                  <div 
+                    key={l} 
+                    className={`flex justify-between items-center p-2.5 rounded-lg border ${
+                      warn ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"
+                    }`}
+                  >
                     <span className="text-xs text-slate-500">{l}</span>
-                    <span className={`text-sm font-bold ${warn ? "text-red-600" : "text-green-700"}`}>{v}</span>
+                    <span className={`text-sm font-bold ${warn ? "text-red-600" : "text-green-700"}`}>
+                      {v}
+                    </span>
                   </div>
                 ))}
               </div>
 
+              {/* Paramedic notes in modal */}
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-5">
                 <p className="text-xs font-bold text-amber-700 mb-1">Paramedic Notes</p>
                 <p className="text-sm text-slate-700">{modal.notes}</p>
               </div>
 
+              {/* Team paging section */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-5">
                 <p className="text-xs font-bold text-blue-700 mb-1">Recommended Team</p>
                 <p className="text-sm font-bold text-blue-900 mb-2">{modal.team}</p>
@@ -287,11 +408,18 @@ export default function IncomingAlerts() {
                 </button>
               </div>
 
+              {/* Action buttons */}
               <div className="grid grid-cols-3 gap-2">
-                <button onClick={() => confirm(modal)} className="bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-xs font-bold transition-colors">
+                <button 
+                  onClick={() => confirm(modal)} 
+                  className="bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-xs font-bold transition-colors"
+                >
                   Confirm Room
                 </button>
-                <button onClick={() => reassign(modal)} className="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-xs font-bold transition-colors">
+                <button 
+                  onClick={() => reassign(modal)} 
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-xs font-bold transition-colors"
+                >
                   Reassign
                 </button>
                 <button

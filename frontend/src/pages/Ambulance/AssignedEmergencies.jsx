@@ -18,6 +18,4 @@ const AssignedEmergencies = () => {
   );
 };
 
-export default function AssignedEmergencies() {
-  return <div>Assigned Emergencies works</div>;
-};
+export default AssignedEmergencies;

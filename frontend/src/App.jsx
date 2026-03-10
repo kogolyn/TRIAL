@@ -267,7 +267,7 @@ function App() {
         <Route
           path="/dashboard/*"
           element={
-            <ProtectedRoute user={user} role="medical">
+            <ProtectedRoute user={user} role={["medical", "hospital"]}>
               <DashboardRoutes />
             </ProtectedRoute>
           }

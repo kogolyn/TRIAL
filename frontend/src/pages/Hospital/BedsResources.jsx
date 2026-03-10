@@ -44,7 +44,7 @@ export default function BedsResources() {
     (async () => {
       try {
         setLoading(true);
-        const payload = await api.get("/hospital/resources");
+        const payload = await api.get("/api/hospitals/resources");
         setData(payload);
       } catch (e) {
         setError(e.message || "Failed to load resources");
@@ -71,10 +71,10 @@ export default function BedsResources() {
         {[
           { label: "Total Beds", value: totalBeds, color: "text-blue-600 border-l-blue-500", icon: Bed },
           { label: "Available Beds", value: availBeds, color: "text-green-600 border-l-green-500", icon: CheckCircle },
-        ].map(({ label, value, color, icon: Icon }) => (
+        ].map(({ label, value, color, icon }) => (
           <div key={label} className={`bg-white rounded-xl p-4 shadow-sm border border-slate-100 border-l-4 ${color}`}>
             <div className="flex justify-between items-start mb-2">
-              <Icon className={`w-5 h-5 ${color.split(" ")[0]}`} />
+              {React.createElement(icon, { className: `w-5 h-5 ${color.split(" ")[0]}` })}
               <span className={`text-2xl font-black ${color.split(" ")[0]}`}>{value}</span>
             </div>
             <p className="text-xs font-bold text-slate-600">{label}</p>

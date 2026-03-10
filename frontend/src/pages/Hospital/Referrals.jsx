@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ArrowLeftRight, Plus, X, CheckCircle, Clock, XCircle, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { api } from "../../lib/api";
 
@@ -35,15 +35,15 @@ export default function Referrals() {
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
 
-  const toast = (msg, type = "success") => {
+  const toast = useCallback((msg, type = "success") => {
     setNotif({ msg, type });
     setTimeout(() => setNotif(null), 4000);
-  };
+  }, []);
 
-  const loadReferrals = async () => {
+  const loadReferrals = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await api.get("/hospital/referrals");
+      const data = await api.get("/api/hospitals/referrals");
       setIncoming(data.incoming || []);
       setOutgoing(data.outgoing || []);
     } catch (error) {
@@ -51,15 +51,15 @@ export default function Referrals() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     loadReferrals();
-  }, []);
+  }, [loadReferrals]);
 
   const accept = async (id) => {
     try {
-      const updated = await api.patch(`/hospital/referrals/${id}/accept`);
+      const updated = await api.patch(`/api/hospitals/referrals/${id}/accept`);
       setIncoming((rs) => rs.map((r) => (r.id === id ? updated : r)));
       toast("Patient accepted, prepare receiving team and room");
       setModal(null);
@@ -71,7 +71,7 @@ export default function Referrals() {
   const reject = async (id, name) => {
     if (!window.confirm(`Reject incoming referral for ${name}? The sending facility will be notified.`)) return;
     try {
-      const updated = await api.patch(`/hospital/referrals/${id}/reject`);
+      const updated = await api.patch(`/api/hospitals/referrals/${id}/reject`);
       setIncoming((rs) => rs.map((r) => (r.id === id ? updated : r)));
       toast("Referral rejected, sending facility has been notified", "error");
       setModal(null);
@@ -83,7 +83,7 @@ export default function Referrals() {
   const cancel = async (id, name) => {
     if (!window.confirm(`Cancel transfer request for ${name}?`)) return;
     try {
-      await api.delete(`/hospital/referrals/${id}/cancel`);
+      await api.delete(`/api/hospitals/referrals/${id}/cancel`);
       setOutgoing((rs) => rs.filter((r) => r.id !== id));
       toast(`Transfer request for ${name} cancelled`);
       setModal(null);
@@ -100,7 +100,7 @@ export default function Referrals() {
     }
 
     try {
-      const created = await api.post("/hospital/referrals", form);
+      const created = await api.post("/api/hospitals/referrals", form);
       setOutgoing((rs) => [created, ...rs]);
       toast(`Transfer request for ${form.patient} submitted, awaiting response from ${form.toFacility}`);
       setShowForm(false);

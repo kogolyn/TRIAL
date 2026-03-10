@@ -7,7 +7,12 @@ function NavigationMap({ ambulance, incident, hospital, navigation, currentSpeed
   const mapInstanceRef = useRef(null);
 
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    if (!mapRef.current) return;
+
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
+    }
 
     // Initialize map
     const map = L.map(mapRef.current).setView([ambulance.lat, ambulance.lng], 13);
@@ -73,7 +78,17 @@ function NavigationMap({ ambulance, incident, hospital, navigation, currentSpeed
         mapInstanceRef.current = null;
       }
     };
-  }, []);
+  }, [
+    ambulance.id,
+    ambulance.lat,
+    ambulance.lng,
+    currentSpeed,
+    hospital.lat,
+    hospital.lng,
+    hospital.name,
+    incident.lat,
+    incident.lng,
+  ]);
 
   return (
     <div className="flex-1 flex flex-col bg-card-bg">

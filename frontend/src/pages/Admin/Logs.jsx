@@ -10,7 +10,7 @@ const SystemLogs = () => {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [dateRange, setDateRange] = useState('today');
 
-  const [logs, setLogs] = useState([
+  const [logs] = useState([
     { id: 1, timestamp: '2024-02-17 14:32:15', level: 'info',    category: 'authentication', user: 'admin@emergency.ke', action: 'User logged in', ip: '102.68.75.23', details: 'Successful authentication' },
     { id: 2, timestamp: '2024-02-17 14:30:42', level: 'success', category: 'registration',  user: 'john.k@emergency.ke', action: 'Hospital registered', ip: '102.68.75.24', details: 'Kenyatta National Hospital submitted' },
     { id: 3, timestamp: '2024-02-17 14:28:19', level: 'warning', category: 'verification',  user: 'jane.w@emergency.ke', action: 'Verification attempt failed', ip: '102.68.75.25', details: 'Missing required documents' },
@@ -253,11 +253,11 @@ const SystemLogs = () => {
   );
 };
 
-const LogStatCard = ({ label, value, color, icon: Icon }) => (
+const LogStatCard = ({ label, value, color, icon }) => (
   <div className="bg-white rounded-xl p-5 shadow-md border border-gray-100 hover:shadow-lg transition-all">
     <div className="flex items-center justify-between mb-3">
       <div className={`${color} p-2.5 rounded-lg shadow-md`}>
-        <Icon className="w-5 h-5 text-white" />
+        {React.createElement(icon, { className: "w-5 h-5 text-white" })}
       </div>
     </div>
     <p className="text-sm text-gray-600 font-medium">{label}</p>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate } from "react-router-dom";
 
 function RegisterForm() {
@@ -8,17 +8,8 @@ function RegisterForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState('');
-  const [hospital, setHospital] = useState(''); // ✅ Added hospital state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const hospitals = [
-    "Kenyatta National Hospital",
-    "Nakuru Level 5 Hospital",
-    "Aga Khan Hospital",
-    "MP Shah Hospital"
-  ];
-
  const handleSubmit = async (e) => {
   e.preventDefault();
   setError('');
@@ -99,26 +90,6 @@ function RegisterForm() {
             <option value="medical">Medical Personnel</option>
           </select>
         </div>
-
-        {/* Hospital dropdown - smaller width
-        {role === "medical" && (
-          <div>
-            <label className="block text-sm font-medium text-blue-600 mb-2">
-              Hospital
-            </label>
-            <select
-              value={hospital}
-              onChange={(e) => setHospital(e.target.value)}
-              className="w-64 px-4 py-3 border border-blue-600 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-              required
-            >
-              <option value="">Select Hospital</option>
-              {hospitals.map((h, index) => (
-                <option key={index} value={h}>{h}</option>
-              ))}
-            </select>
-          </div>
-        )} }
 
         {/* Password */}
         <div>

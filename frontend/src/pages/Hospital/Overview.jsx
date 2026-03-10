@@ -25,7 +25,7 @@ export default function Overview() {
     (async () => {
       try {
         setLoading(true);
-        const payload = await api.get("/hospital/overview");
+        const payload = await api.get("/api/hospitals/overview");
         setData(payload);
       } catch (e) {
         setError(e.message || "Failed to load overview");
@@ -57,13 +57,13 @@ export default function Overview() {
   return (
     <div className="space-y-5 max-w-screen-2xl mx-auto">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {kpis.map(({ icon: Icon, label, value, sub, path }) => {
+        {kpis.map(({ icon, label, value, sub, path }) => {
           const style = KPI_STYLES[label];
           return (
             <Link key={label} to={path} className={`bg-white rounded-xl p-4 shadow-sm border border-slate-100 border-l-4 ${style.border} hover:shadow-md transition-all`}>
               <div className="flex justify-between items-start mb-3">
                 <div className={`w-8 h-8 rounded-lg ${style.iconBg} flex items-center justify-center`}>
-                  <Icon className={`w-4 h-4 ${style.iconColor}`} />
+                  {React.createElement(icon, { className: `w-4 h-4 ${style.iconColor}` })}
                 </div>
                 <span className={`text-2xl font-black ${style.value}`}>{value}</span>
               </div>
