@@ -9,6 +9,7 @@ function EmergencyConfirm({ onCancel }) {
   const [coordinates, setCoordinates] = useState({ latitude: null, longitude: null }); // ← NEW
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [loading, setLoading] = useState(false); // ← NEW
+  const [error, setError] = useState("");
 
   // Get user's location
   useEffect(() => {
@@ -60,10 +61,12 @@ function EmergencyConfirm({ onCancel }) {
     }
 
     setLoading(true); // Show loading state
+    setError("");
 
     try {
       // Send to backend
-      const response = await fetch('http://localhost:5000/api/emergency', {
+      const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      const response = await fetch(`${baseUrl}/api/emergencies`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -82,19 +85,28 @@ function EmergencyConfirm({ onCancel }) {
         })
       });
 
-      const data = await response.json();
+      let data = null;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
 
-      if (data.success) {
+      if (!response.ok) {
+        throw new Error(data?.message || `Request failed (${response.status})`);
+      }
+
+      if (data?.success) {
         console.log('✅ Emergency created:', data.data);
         setIsConfirmed(true); // Show success page
       } else {
-        alert('Error: ' + data.message);
-        setLoading(false);
+        throw new Error(data?.message || "Emergency created but server returned an unexpected response.");
       }
 
     } catch (error) {
       console.error('❌ Error sending emergency:', error);
-      alert('Failed to send emergency request. Please try again.');
+      setError(error.message || 'Failed to send emergency request. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
@@ -274,6 +286,12 @@ function EmergencyConfirm({ onCancel }) {
         >
           {loading ? 'Sending...' : 'Confirm Emergency →'}
         </button>
+
+        {error && (
+          <p className="text-red-600 text-sm mt-4 text-center">
+            {error}
+          </p>
+        )}
       </div>
     </div>
   );

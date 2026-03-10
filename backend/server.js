@@ -6,7 +6,7 @@ import http from "http";
 import connectDB from "./config/db.js";
 import userRoutes from "./routes/user.routes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
-import emergencyRoutes from "./routes/emergencyRoutes.js";
+import emergencyRoutes from "./routes/emergency.js";
 import ambulanceRoutes from "./routes/ambulanceRoutes.js";
 import hospitalRoutes from "./routes/hospital.routes.js";
 import hospitalLegacyRoutes from "./routes/hospitalRoutes.js";

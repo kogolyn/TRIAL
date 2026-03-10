@@ -202,7 +202,10 @@ if (activeSection === 'coordination-actions') {
             {/* Coordination tools directly */}
             {selectedIncident ? (
                 <CoordinationActions
+                    incidents={incidents}
                     selectedIncident={selectedIncident}
+                    selectedIncidentId={selectedIncidentId}
+                    onSelectIncident={setSelectedIncidentId}
                     ambulances={ambulances}
                     hospitals={hospitals}
                     onActionComplete={refreshData}

@@ -9,7 +9,15 @@ const STATUS_OPTIONS = [
     { label: 'Completed', value: 'completed' },
 ];
 
-export default function CoordinationActions({ selectedIncident, ambulances, hospitals, onActionComplete }) {
+export default function CoordinationActions({
+    incidents = [],
+    selectedIncident,
+    selectedIncidentId,
+    onSelectIncident,
+    ambulances,
+    hospitals,
+    onActionComplete,
+}) {
     const [selectedAmbulanceId, setSelectedAmbulanceId] = useState('');
     const [selectedHospitalId, setSelectedHospitalId] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('en_route');
@@ -23,6 +31,13 @@ export default function CoordinationActions({ selectedIncident, ambulances, hosp
     );
 
     const canAct = Boolean(selectedIncident?.recordId);
+
+    function handleIncidentChange(event) {
+        const value = event.target.value || null;
+        setError('');
+        setMessage('');
+        onSelectIncident?.(value);
+    }
 
     async function runAction(fn, successMessage) {
         setSubmitting(true);
@@ -89,6 +104,25 @@ export default function CoordinationActions({ selectedIncident, ambulances, hosp
                 ) : (
                     <span>Select an incident from the table to enable actions.</span>
                 )}
+            </div>
+
+            <div className="px-5 pt-3">
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Select Incident</label>
+                <select
+                    value={selectedIncidentId || ''}
+                    onChange={handleIncidentChange}
+                    disabled={submitting || incidents.length === 0}
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                >
+                    <option value="">-- Select incident --</option>
+                    {incidents
+                        .filter((inc) => inc.status === 'Pending')
+                        .map((inc) => (
+                        <option key={inc.recordId} value={inc.recordId}>
+                            {inc.id} - {inc.condition || inc.victimReport?.emergencyType || 'Unknown'} - {inc.location || 'No address'} ({inc.status})
+                        </option>
+                    ))}
+                </select>
             </div>
 
             <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
