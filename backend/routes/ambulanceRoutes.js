@@ -16,7 +16,9 @@ router.get("/api/ambulance/all", async (req, res) => {
     }
     return res.json(Array.from(byAmbulance.values()));
   } catch (error) {
-    return res.status(500).json({ message: "Failed to fetch ambulance statuses", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Failed to fetch ambulance statuses", error: error.message });
   }
 });
 
@@ -27,7 +29,9 @@ router.get("/api/ambulance/:ambulanceId/status", async (req, res) => {
     }).sort({ timestamp: -1 });
     return res.json(latest);
   } catch (error) {
-    return res.status(500).json({ message: "Failed to fetch ambulance status", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Failed to fetch ambulance status", error: error.message });
   }
 });
 
@@ -49,7 +53,9 @@ router.put("/api/ambulance/:ambulanceId/location", async (req, res) => {
 
     return res.json(location);
   } catch (error) {
-    return res.status(500).json({ message: "Failed to update location", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Failed to update location", error: error.message });
   }
 });
 
@@ -76,7 +82,9 @@ router.put("/api/ambulance/:ambulanceId/status", async (req, res) => {
     });
     return res.json(created);
   } catch (error) {
-    return res.status(500).json({ message: "Failed to update status", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Failed to update status", error: error.message });
   }
 });
 
@@ -88,7 +96,9 @@ router.get("/api/ambulance/:ambulanceId/active-incident", async (req, res) => {
     }).sort({ createdAt: -1 });
     return res.json(activeIncident);
   } catch (error) {
-    return res.status(500).json({ message: "Failed to fetch active incident", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Failed to fetch active incident", error: error.message });
   }
 });
 
@@ -105,7 +115,9 @@ router.post("/api/ambulance/:ambulanceId/alert", async (req, res) => {
 
     return res.status(201).json(alert);
   } catch (error) {
-    return res.status(500).json({ message: "Failed to create emergency alert", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Failed to create emergency alert", error: error.message });
   }
 });
 

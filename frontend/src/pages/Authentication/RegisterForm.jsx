@@ -1,55 +1,53 @@
-import { useState } from 'react';
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../../config/api";
 
 function RegisterForm() {
   const navigate = useNavigate();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('');
-  const [ambulanceId, setAmbulanceId] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState("");
+  const [ambulanceId, setAmbulanceId] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
 
-  if (password !== confirmPassword) {
-    setError('Passwords do not match');
-    return;
-  }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
 
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    await apiRequest("/users/signup", {
-      method: "POST",
-      body: JSON.stringify({
-        name,
-        email,
-        password,
-        role,
-        ambulanceId: role === "ambulance" ? ambulanceId.trim() : undefined,
-      }),
-    });
-    alert("Registration successful! Please log in.");
-    console.log("User registered successfully");
-    navigate("/login");
-  } catch (err) {
-    setError(err.message || "Registration failed");
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      await apiRequest("/users/signup", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role,
+          ambulanceId: role === "ambulance" ? ambulanceId.trim() : undefined,
+        }),
+      });
+      alert("Registration successful! Please log in.");
+      console.log("User registered successfully");
+      navigate("/login");
+    } catch (err) {
+      setError(err.message || "Registration failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div>
       <form onSubmit={handleSubmit} className="space-y-4">
-
-        {/* Full Name */}
         <div>
           <label className="block text-sm font-medium text-blue-600 mb-2">
             Full Name
@@ -64,7 +62,6 @@ function RegisterForm() {
           />
         </div>
 
-        {/* Email */}
         <div>
           <label className="block text-sm font-medium text-blue-600 mb-2">
             Email
@@ -79,14 +76,13 @@ function RegisterForm() {
           />
         </div>
 
-        {/* Role select - full width */}
         <div>
           <label className="block text-sm font-medium text-blue-600 mb-2">
             Role
           </label>
           <select
             value={role}
-            onChange={(e) => setRole(e.target.value)} // simple update
+            onChange={(e) => setRole(e.target.value)}
             className="w-full px-4 py-3 border border-blue-600 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
             required
           >
@@ -113,7 +109,6 @@ function RegisterForm() {
           </div>
         )}
 
-                {/* Password */}
         <div>
           <label className="block text-sm font-medium text-blue-600 mb-2">
             Password
@@ -128,7 +123,6 @@ function RegisterForm() {
           />
         </div>
 
-        {/* Confirm Password */}
         <div>
           <label className="block text-sm font-medium text-blue-600 mb-2">
             Confirm Password
@@ -143,20 +137,14 @@ function RegisterForm() {
           />
         </div>
 
-        {/* Error message */}
-        {error && (
-          <p className="text-sm text-red-600">
-            {error}
-          </p>
-        )}
+        {error && <p className="text-sm text-red-600">{error}</p>}
 
-        {/* Submit button */}
         <button
           type="submit"
           disabled={loading}
           className="w-full py-3 rounded-lg font-semibold bg-blue-600 hover:bg-green-600 text-white transition disabled:opacity-50"
         >
-          {loading ? 'Creating account...' : 'Create Account'}
+          {loading ? "Creating account..." : "Create Account"}
         </button>
       </form>
     </div>
@@ -164,4 +152,3 @@ function RegisterForm() {
 }
 
 export default RegisterForm;
-

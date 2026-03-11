@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NavigationMap from "./NavigationMap";
 import EmergencyFacilities from "./EmergencyFacilities";
 import DispatchComms from "./DispatchComms";
 import { apiRequest } from "../../config/api";
+import { createAppSocket } from "../../config/socket";
 
 function AmbulanceDashboard() {
   const navigate = useNavigate();
@@ -57,27 +58,140 @@ function AmbulanceDashboard() {
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [showPatientCare, setShowPatientCare] = useState(false);
   const [showLiveVitals, setShowLiveVitals] = useState(false);
-
   const [incident] = useState({
     lat: -0.29,
     lng: 36.07,
   });
-  const [hospital, setHospital] = useState({
+
+  const [hospital] = useState({
     name: "Assigned Hospital",
     lat: -0.3031,
     lng: 36.08,
   });
+
+  const facilitySelected = Boolean(selectedFacility?.id);
+
+  const validateVitals = () => {
+    const errors = [];
+    const { heartRate, bloodPressure, oxygenLevel, temperature, respiratoryRate } =
+      patientData.vitals;
+
+    if (bloodPressure && !/^\d{2,3}\/\d{2,3}$/.test(bloodPressure.trim())) {
+      errors.push("Blood pressure must be in the format 120/80.");
+    }
+
+    const parsedHeartRate = Number(heartRate);
+    if (heartRate !== "" && (Number.isNaN(parsedHeartRate) || parsedHeartRate < 0)) {
+      errors.push("Heart rate must be 0 or higher.");
+    }
+
+    const parsedOxygen = Number(oxygenLevel);
+    if (
+      oxygenLevel !== "" &&
+      (Number.isNaN(parsedOxygen) || parsedOxygen < 0 || parsedOxygen > 100)
+    ) {
+      errors.push("Oxygen level must be between 0 and 100.");
+    }
+
+    const parsedTemp = Number(temperature);
+    if (temperature !== "" && (Number.isNaN(parsedTemp) || parsedTemp < 0)) {
+      errors.push("Temperature must be 0 or higher.");
+    }
+
+    const parsedResp = Number(respiratoryRate);
+    if (respiratoryRate !== "" && (Number.isNaN(parsedResp) || parsedResp < 0)) {
+      errors.push("Respiratory rate must be 0 or higher.");
+    }
+
+    return errors.join(" ");
+  };
 
   const navigation = {
     nextManeuver: "Proceed to destination",
     distance: "Live",
     destinationName: hospital.name,
     timeToDestination: patientData.estimatedTime || "--",
-    distanceToDestination: "Updating",
+    distanceToDestination: "Select a hospital",
   };
 
   const requiredBeds =
     patientData.severity === "Critical" || patientData.severity === "Severe" ? 2 : 1;
+
+  const mapFacility = useCallback(
+    (facility, fallbackDistanceKm = 0) => ({
+      id: facility.id,
+      name: facility.name,
+      level: facility.type || "Hospital",
+      hospitalUserId: facility.hospitalUserId || null,
+      lat: Number(facility.latitude || facility.lat || 0),
+      lng: Number(facility.longitude || facility.lng || 0),
+      distanceKm: Number(facility.distanceKm ?? fallbackDistanceKm ?? 0),
+      bedsAvailable: Number(facility.bedsAvailable || 0),
+      wait: `${Math.max(5, Math.round((facility.distanceKm || fallbackDistanceKm || 1) * 4))}m`,
+      canAccept:
+        Number(facility.bedsAvailable || 0) >= requiredBeds &&
+        Number(facility.bedsAvailable || 0) > 0,
+      status:
+        Number(facility.bedsAvailable || 0) >= requiredBeds &&
+        Number(facility.bedsAvailable || 0) > 0
+          ? "available"
+          : "busy",
+    }),
+    [requiredBeds],
+  );
+
+  const loadFacilities = useCallback(async () => {
+    const toRadians = (value) => (value * Math.PI) / 180;
+    const haversineKm = (lat1, lon1, lat2, lon2) => {
+      const R = 6371;
+      const dLat = toRadians(lat2 - lat1);
+      const dLon = toRadians(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRadians(lat1)) *
+          Math.cos(toRadians(lat2)) *
+          Math.sin(dLon / 2) *
+          Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
+
+    try {
+      const nearby = await apiRequest(
+        `/api/facilities/nearby?lat=${ambulance.lat}&lng=${ambulance.lng}&radius=50`,
+      );
+      let mapped = (nearby || []).map((facility) => mapFacility(facility));
+
+      if (mapped.length < 6) {
+        const available = await apiRequest("/api/facilities/available");
+        const mergedById = new Map(mapped.map((facility) => [facility.id, facility]));
+        (available || []).forEach((facility) => {
+          const lat = Number(facility.latitude || 0);
+          const lng = Number(facility.longitude || 0);
+          const distanceKm = haversineKm(ambulance.lat, ambulance.lng, lat, lng);
+          if (!mergedById.has(facility.id)) {
+            mergedById.set(facility.id, mapFacility(facility, distanceKm));
+          }
+        });
+        mapped = Array.from(mergedById.values()).sort((a, b) => a.distanceKm - b.distanceKm);
+      }
+
+      setFacilities(mapped);
+      setTrafficConditions((prev) => {
+        const updated = [...prev];
+        if (mapped.length > 0) {
+          updated[1] = {
+            type: "clear",
+            location: `Nearest facility: ${mapped[0].name}`,
+            status: "green",
+          };
+        }
+        return updated;
+      });
+    } catch {
+      setFacilities([]);
+    }
+  }, [ambulance.lat, ambulance.lng, mapFacility]);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -120,49 +234,54 @@ function AmbulanceDashboard() {
   }, [ambulanceId]);
 
   useEffect(() => {
-    const loadFacilities = async () => {
-      try {
-        const data = await apiRequest(
-          `/api/facilities/nearby?lat=${ambulance.lat}&lng=${ambulance.lng}&radius=10`,
-        );
-        const mapped = (data || []).map((facility) => ({
-          id: facility.id,
-          name: facility.name,
-          level: facility.type || "Hospital",
-          lat: Number(facility.latitude || 0),
-          lng: Number(facility.longitude || 0),
-          distanceKm: Number(facility.distanceKm || 0),
-          bedsAvailable: Number(facility.bedsAvailable || 0),
-          beds: `${facility.bedsAvailable || 0} beds avail.`,
-          wait: `${Math.max(5, Math.round((facility.distanceKm || 1) * 4))}m`,
-          canAccept:
-            Number(facility.bedsAvailable || 0) >= requiredBeds &&
-            Number(facility.bedsAvailable || 0) > 0,
-          status:
-            Number(facility.bedsAvailable || 0) >= requiredBeds &&
-            Number(facility.bedsAvailable || 0) > 0
-              ? "available"
-              : "busy",
-        }));
-        setFacilities(mapped);
-        setTrafficConditions((prev) => {
-          const updated = [...prev];
-          if (mapped.length > 0) {
-            updated[1] = {
-              type: "clear",
-              location: `Nearest facility: ${mapped[0].name}`,
-              status: "green",
-            };
-          }
-          return updated;
-        });
-      } catch {
-        setFacilities([]);
+    loadFacilities();
+  }, [loadFacilities]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const socket = createAppSocket(token);
+    if (!socket) return undefined;
+
+    const onNotification = (notification) => {
+      if (!notification) return;
+
+      if (notification.type === "dispatch") {
+        const payload = notification.payload || {};
+        setDispatchMessages((prev) => [
+          {
+            ...payload,
+            sender: payload.sender || "Dispatch",
+            code: payload.code || "AMB-IN",
+            message: payload.message || notification.message || "New dispatch update",
+            timestamp: new Date(payload.timestamp || notification.timestamp || Date.now()),
+          },
+          ...prev,
+        ]);
+        return;
+      }
+
+      if (notification.type === "arrival-notice") {
+        setTrafficConditions((prev) => [
+          {
+            type: "clear",
+            location: notification.message || "Hospital arrival notice received",
+            status: "green",
+          },
+          ...prev.slice(0, 1),
+        ]);
       }
     };
 
-    loadFacilities();
-  }, [ambulance.lat, ambulance.lng, requiredBeds]);
+    socket.on("ambulance-notification", onNotification);
+    socket.on("connect_error", (err) => {
+      setError(err?.message || "Real-time connection failed");
+    });
+
+    return () => {
+      socket.off("ambulance-notification", onNotification);
+      socket.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     apiRequest(`/api/ambulance/${ambulanceId}/location`, {
@@ -178,6 +297,7 @@ function AmbulanceDashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
@@ -193,6 +313,11 @@ function AmbulanceDashboard() {
   };
 
   const handleSubmitPatientCare = async () => {
+    if (!selectedFacility?.id) {
+      setError("Select an emergency facility first so patient details can be sent to hospital.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -209,6 +334,8 @@ function AmbulanceDashboard() {
         severity: patientData.severity,
         estimatedTime: patientData.estimatedTime,
         paramedicReport: patientData.paramedicReport,
+        facilityId: selectedFacility.id,
+        hospitalUserId: selectedFacility.hospitalUserId || null,
       };
 
       const record = await apiRequest("/api/patient-care", {
@@ -227,6 +354,18 @@ function AmbulanceDashboard() {
   };
 
   const handleSubmitVitals = async () => {
+    console.log("Vitals submit clicked");
+    if (!selectedFacility?.id) {
+      setError("Select an emergency facility first so live vitals can be sent to hospital.");
+      return;
+    }
+
+    const vitalsError = validateVitals();
+    if (vitalsError) {
+      setError(vitalsError);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -250,7 +389,10 @@ function AmbulanceDashboard() {
         respiratoryRate: patientData.vitals.respiratoryRate
           ? Number(patientData.vitals.respiratoryRate)
           : null,
+        facilityId: selectedFacility.id,
+        hospitalUserId: selectedFacility.hospitalUserId || null,
       };
+      console.log("Vitals payload:", payload);
 
       await apiRequest("/api/vitals", {
         method: "POST",
@@ -291,22 +433,22 @@ function AmbulanceDashboard() {
 
   const handleSelectFacility = async (facility) => {
     setSelectedFacility(facility);
-    if (!Number.isNaN(facility.lat) && !Number.isNaN(facility.lng)) {
-      setHospital({
-        name: facility.name,
-        lat: facility.lat,
-        lng: facility.lng,
-      });
-    } else {
-      setHospital((prev) => ({ ...prev, name: facility.name }));
-    }
+    setError("");
 
     try {
       await apiRequest(`/api/facilities/${facility.id}/notify-arrival`, {
         method: "PUT",
         body: JSON.stringify({
           ambulanceId,
+          hospitalUserId: facility.hospitalUserId || null,
           eta: patientData.estimatedTime || "Unknown",
+          patientName: patientData.patientName || "Unknown Patient",
+          age: patientData.age ? Number(patientData.age) : null,
+          gender: patientData.gender || null,
+          medicalCondition: patientData.medicalCondition || "Emergency case",
+          severity: patientData.severity || "moderate",
+          distanceKm: facility.distanceKm,
+          notes: patientData.paramedicReport || "",
         }),
       });
     } catch (notifyError) {
@@ -320,6 +462,7 @@ function AmbulanceDashboard() {
     navigate("/ambulance/facilities", {
       state: {
         facilities,
+        selectedFacility,
         ambulance: {
           id: ambulance.id,
           lat: ambulance.lat,
@@ -328,6 +471,32 @@ function AmbulanceDashboard() {
       },
     });
   };
+
+  const handleRadioDispatch = async () => {
+    await handleSendDispatch(
+      `Radio dispatch check from ${ambulanceId}. Current status: ${ambulance.status}.`,
+    );
+  };
+
+  const distanceToDestination = useMemo(() => {
+    if (!selectedFacility) return "Select a hospital";
+    const toRadians = (value) => (value * Math.PI) / 180;
+    const haversineKm = (lat1, lon1, lat2, lon2) => {
+      const R = 6371;
+      const dLat = toRadians(lat2 - lat1);
+      const dLon = toRadians(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRadians(lat1)) *
+          Math.cos(toRadians(lat2)) *
+          Math.sin(dLon / 2) *
+          Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
+    const km = haversineKm(ambulance.lat, ambulance.lng, hospital.lat, hospital.lng);
+    return `${km.toFixed(1)} km`;
+  }, [ambulance.lat, ambulance.lng, hospital.lat, hospital.lng, selectedFacility]);
 
   return (
     <div className="min-h-screen flex flex-col bg-white relative">
@@ -373,7 +542,7 @@ function AmbulanceDashboard() {
               ambulance={ambulance}
               incident={incident}
               hospital={hospital}
-              navigation={navigation}
+              navigation={{ ...navigation, distanceToDestination }}
               currentSpeed={ambulance.currentSpeed}
             />
 
@@ -417,16 +586,23 @@ function AmbulanceDashboard() {
                 </p>
               )}
             </div>
+            {!facilitySelected && (
+              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+                Select an emergency facility to enable patient care and live vitals.
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={() => setShowPatientCare(true)}
-                className="px-6 py-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all shadow-md"
+                disabled={!facilitySelected}
+                className="px-6 py-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Patient Care
               </button>
               <button
                 onClick={() => setShowLiveVitals(true)}
-                className="px-6 py-4 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all shadow-md"
+                disabled={!facilitySelected}
+                className="px-6 py-4 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Live Vitals
               </button>
@@ -441,8 +617,13 @@ function AmbulanceDashboard() {
             selectedFacilityId={selectedFacility?.id}
             onSelectFacility={handleSelectFacility}
             onViewAllMap={handleViewAllFacilitiesMap}
+            onRefreshFacilities={loadFacilities}
           />
-          <DispatchComms messages={dispatchMessages} onSendMessage={handleSendDispatch} />
+          <DispatchComms
+            messages={dispatchMessages}
+            onSendMessage={handleSendDispatch}
+            onRadioDispatch={handleRadioDispatch}
+          />
         </div>
       </div>
 
@@ -455,6 +636,16 @@ function AmbulanceDashboard() {
               <button onClick={() => setShowPatientCare(false)} className="text-gray-500 text-2xl">x</button>
             </div>
             <div className="p-6 grid grid-cols-2 gap-4">
+              {error && (
+                <div className="col-span-2 rounded-lg border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">
+                  {error}
+                </div>
+              )}
+              {selectedFacility && (
+                <div className="col-span-2 rounded-lg border border-green-200 bg-green-50 text-green-700 px-4 py-3 text-sm">
+                  Facility selected: {selectedFacility.name}
+                </div>
+              )}
               <input className="border rounded p-3" placeholder="Patient Name*" value={patientData.patientName} onChange={(e) => handlePatientDataChange("patientName", e.target.value)} />
               <input className="border rounded p-3" placeholder="Medical Condition*" value={patientData.medicalCondition} onChange={(e) => handlePatientDataChange("medicalCondition", e.target.value)} />
               <select className="border rounded p-3" value={patientData.severity} onChange={(e) => handlePatientDataChange("severity", e.target.value)}>
@@ -491,13 +682,23 @@ function AmbulanceDashboard() {
               <button onClick={() => setShowLiveVitals(false)} className="text-gray-500 text-2xl">x</button>
             </div>
             <div className="p-6 grid grid-cols-2 gap-4">
+              {error && (
+                <div className="col-span-2 rounded-lg border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">
+                  {error}
+                </div>
+              )}
+              {selectedFacility && (
+                <div className="col-span-2 rounded-lg border border-green-200 bg-green-50 text-green-700 px-4 py-3 text-sm">
+                  Facility selected: {selectedFacility.name}
+                </div>
+              )}
               <input className="border rounded p-3" type="number" placeholder="Heart Rate" value={patientData.vitals.heartRate} onChange={(e) => handleVitalsChange("heartRate", e.target.value)} />
               <input className="border rounded p-3" placeholder="Blood Pressure (120/80)" value={patientData.vitals.bloodPressure} onChange={(e) => handleVitalsChange("bloodPressure", e.target.value)} />
-              <input className="border rounded p-3" type="number" placeholder="Oxygen Level" value={patientData.vitals.oxygenLevel} onChange={(e) => handleVitalsChange("oxygenLevel", e.target.value)} />
-              <input className="border rounded p-3" type="number" step="0.1" placeholder="Temperature" value={patientData.vitals.temperature} onChange={(e) => handleVitalsChange("temperature", e.target.value)} />
-              <input className="border rounded p-3 col-span-2" type="number" placeholder="Respiratory Rate" value={patientData.vitals.respiratoryRate} onChange={(e) => handleVitalsChange("respiratoryRate", e.target.value)} />
+              <input className="border rounded p-3" type="number" min="0" max="100" placeholder="Oxygen Level" value={patientData.vitals.oxygenLevel} onChange={(e) => handleVitalsChange("oxygenLevel", e.target.value)} />
+              <input className="border rounded p-3" type="number" min="0" step="0.1" placeholder="Temperature" value={patientData.vitals.temperature} onChange={(e) => handleVitalsChange("temperature", e.target.value)} />
+              <input className="border rounded p-3 col-span-2" type="number" min="0" placeholder="Respiratory Rate" value={patientData.vitals.respiratoryRate} onChange={(e) => handleVitalsChange("respiratoryRate", e.target.value)} />
               <button onClick={() => setShowLiveVitals(false)} className="bg-gray-500 text-white rounded p-3">Cancel</button>
-              <button disabled={loading} onClick={handleSubmitVitals} className="bg-green-600 text-white rounded p-3 disabled:opacity-60">
+              <button type="button" disabled={loading} onClick={handleSubmitVitals} className="bg-green-600 text-white rounded p-3 disabled:opacity-60">
                 {loading ? "Saving..." : "Record Vital Signs"}
               </button>
             </div>

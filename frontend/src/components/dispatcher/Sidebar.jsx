@@ -1,29 +1,29 @@
 import React from 'react';
 
-export default function Sidebar() {
+const ITEMS = [
+    { key: 'dashboard', label: 'Dashboard' },
+    { key: 'incoming-alerts', label: 'Incoming Alerts' },
+    { key: 'active-incidents', label: 'Active Incidents' },
+    { key: 'coordination-actions', label: 'Coordination Actions' },
+];
+
+export default function Sidebar({ activeSection, onChangeSection }) {
     return (
-        <div className="w-[220px] bg-white border-r border-gray-200 flex flex-col pt-5">
+        <div className="w-[240px] bg-white border-r border-gray-200 flex flex-col pt-5">
             <div className="flex-1">
-                <div className="px-5 py-3 flex items-center gap-2.5 cursor-pointer bg-blue-600 text-white m-1 rounded">
-                    <span className="w-5 text-center">☐</span> Dashboard
-                </div>
-                <div className="px-5 py-3 flex items-center gap-2.5 cursor-pointer text-gray-500 hover:bg-blue-50 hover:text-blue-600 m-1 rounded transition-colors">
-                    <span className="w-5 text-center">ⓘ</span> Incidents
-                </div>
-                <div className="px-5 py-3 flex items-center gap-2.5 cursor-pointer text-gray-500 hover:bg-blue-50 hover:text-blue-600 m-1 rounded transition-colors">
-                    <span className="w-5 text-center">🏥</span> Hospitals
-                </div>
-                <div className="px-5 py-3 flex items-center gap-2.5 cursor-pointer text-gray-500 hover:bg-blue-50 hover:text-blue-600 m-1 rounded transition-colors">
-                    <span className="w-5 text-center">🚑</span> Ambulances
-                </div>
-                <div className="px-5 py-3 flex items-center gap-2.5 cursor-pointer text-gray-500 hover:bg-blue-50 hover:text-blue-600 m-1 rounded transition-colors">
-                    <span className="w-5 text-center">📄</span> Reports
-                </div>
-            </div>
-            <div className="mt-auto mb-5">
-                <div className="px-5 py-3 flex items-center gap-2.5 cursor-pointer text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300 m-1 rounded transition-colors">
-                    <span className="w-5 text-center">↪</span> Logout
-                </div>
+                {ITEMS.map((item) => (
+                    <button
+                        key={item.key}
+                        onClick={() => onChangeSection?.(item.key)}
+                        className={`w-[calc(100%-8px)] text-left px-5 py-3 flex items-center gap-2.5 cursor-pointer m-1 rounded transition-colors ${
+                            activeSection === item.key
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-500 hover:bg-blue-50 hover:text-blue-600'
+                        }`}
+                    >
+                        <span className="text-sm font-semibold">{item.label}</span>
+                    </button>
+                ))}
             </div>
         </div>
     );

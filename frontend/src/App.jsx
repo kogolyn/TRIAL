@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // Admin COMPONENTS ───────────────────────────────────────────────────────────
@@ -8,6 +8,10 @@ import Navbar        from './components/Admin/Navbar';
 import Dashboard     from './pages/Admin/Dashboard';
 import Registration  from './pages/Admin/Registration';
 import Verification  from './pages/Admin/Verification';
+import Analytics     from './pages/Admin/Analytics';
+import SystemLogs          from './pages/Admin/Logs';
+import Tracking             from './pages/Admin/Tracking';
+import Settings             from './pages/Admin/Settings';
 
 //  AUTH & EMERGENCY PAGES ─────────────────────────────────────────
 import EmergencyRequest from './pages/Landing/EmergencyRequest';
@@ -45,13 +49,25 @@ function LandingPage() {
   const navigate = useNavigate();
   return (
     <div style={{ minHeight: '100vh', width: '100%' }}>
-      <EmergencyRequest onProceed={() => navigate('/login')} />
+      <EmergencyRequest
+        onLogin={() => navigate('/login')}
+        onRegister={() => navigate('/login?mode=register')}
+      />
     </div>
   );
 }
 
 function LoginPage({ setUser }) {
-  const [showLogin, setShowLogin] = useState(true);
+  const location = useLocation();
+  const [showLogin, setShowLogin] = useState(() => {
+    const mode = new URLSearchParams(location.search).get('mode');
+    return mode !== 'register';
+  });
+
+  useEffect(() => {
+    const mode = new URLSearchParams(location.search).get('mode');
+    setShowLogin(mode !== 'register');
+  }, [location.search]);
 
   return (
     <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
@@ -138,7 +154,8 @@ function AdminApp() {
     verification: { title: 'Verification Center',       subtitle: 'Review and verify pending registrations' },
     analytics:    { title: 'System Analytics',          subtitle: 'Detailed analytics and reports' },
     settings:     { title: 'System Settings',           subtitle: 'Configure system settings and preferences' },
-    help:         { title: 'Help & Support',             subtitle: 'Documentation and support resources' },
+    help:         { title: 'Logs',             subtitle: 'System logs and activity tracking' },
+
   };
 
   const current = pageInfo[activeSection] || pageInfo.dashboard;
@@ -148,6 +165,10 @@ function AdminApp() {
       case 'dashboard':    return <Dashboard />;
       case 'registration': return <Registration />;
       case 'verification': return <Verification />;
+      case 'analytics':    return <Analytics />;
+      case 'logs':     return <SystemLogs />;
+      case 'tracking': return <Tracking />;
+      case 'settings': return <Settings />;
       default:
         return (
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-12 text-center">
@@ -213,6 +234,7 @@ function App() {
         {/* Public */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage setUser={setUser} />} />
+        <Route path="/register" element={<Navigate to="/login?mode=register" replace />} />
 
         {/* Protected */}
         <Route
@@ -245,7 +267,7 @@ function App() {
         <Route
           path="/dashboard/*"
           element={
-            <ProtectedRoute user={user} role="medical">
+            <ProtectedRoute user={user} role={["medical", "hospital"]}>
               <DashboardRoutes />
             </ProtectedRoute>
           }

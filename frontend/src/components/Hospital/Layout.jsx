@@ -29,6 +29,7 @@ export default function Layout({ children }) {
 
   const handleLogout = () => {
     if (window.confirm("Are you sure you want to logout?")) {
+      localStorage.removeItem("user");
       navigate("/login");
     }
   };
@@ -73,7 +74,7 @@ export default function Layout({ children }) {
 
         {/* Nav links */}
         <nav className="flex-1 py-3 space-y-1 px-2 overflow-y-auto">
-          {navItems.map(({ path, label, icon: Icon, color }) => (
+          {navItems.map(({ path, label, icon, color }) => (
             <NavLink
               key={path}
               to={path}
@@ -91,7 +92,9 @@ export default function Layout({ children }) {
             >
               {({ isActive }) => (
                 <>
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-white" : color}`} />
+                  {React.createElement(icon, {
+                    className: `w-5 h-5 flex-shrink-0 ${isActive ? "text-white" : color}`,
+                  })}
                   {expanded && <span className="text-sm font-medium whitespace-nowrap">{label}</span>}
                   {/* Tooltip when collapsed */}
                   {!expanded && (

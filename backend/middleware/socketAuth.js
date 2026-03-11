@@ -1,19 +1,36 @@
 import jwt from "jsonwebtoken";
+import { verifyToken } from "../utils/token.js";
 
 export default function socketAuth(socket, next) {
   const token = socket.handshake?.auth?.token;
 
   if (!token) {
-    return next(new Error("Authentication error"));
+    socket.role = "guest";
+    return next();
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    socket.userId = decoded.userId;
-    socket.role = decoded.role;
+    let decoded = verifyToken(token);
+
+    if (!decoded && process.env.JWT_SECRET) {
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+      } catch {
+        decoded = null;
+      }
+    }
+
+    if (!decoded) {
+      socket.role = "guest";
+      return next();
+    }
+
+    socket.userId = decoded.id || decoded.userId;
+    socket.role = decoded.role || "guest";
     socket.ambulanceId = decoded.ambulanceId;
     return next();
   } catch (error) {
-    return next(new Error("Authentication error"));
+    socket.role = "guest";
+    return next();
   }
 }

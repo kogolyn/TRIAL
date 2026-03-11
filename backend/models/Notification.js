@@ -1,59 +1,109 @@
-import { DataTypes } from "sequelize";
-import sequelize from "../config/sequelize.js";
+import mongoose from "mongoose";
 
-const Notification = sequelize.define(
-  "Notification",
+const recipientSchema = new mongoose.Schema(
   {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-    },
     userId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: false,
     },
-    ambulanceId: {
-      type: DataTypes.STRING(50),
+    role: {
+      type: String,
+      enum: ["dispatcher", "ambulance", "hospital", "admin", "reporter"],
+      required: false,
     },
-    hospitalId: {
-      type: DataTypes.INTEGER,
+    targetType: {
+      type: String,
+      enum: ["ambulance", "hospital"],
+      required: false,
     },
-    type: {
-      type: DataTypes.STRING(50),
-      allowNull: false,
+    targetId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: false,
     },
-    title: {
-      type: DataTypes.STRING(255),
+    read: {
+      type: Boolean,
+      default: false,
     },
-    message: {
-      type: DataTypes.TEXT,
-      allowNull: false,
+    acknowledged: {
+      type: Boolean,
+      default: false,
     },
-    priority: {
-      type: DataTypes.ENUM("low", "normal", "high", "critical"),
-      defaultValue: "normal",
-    },
-    payload: {
-      type: DataTypes.JSON,
-    },
-    isRead: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-    readAt: {
-      type: DataTypes.DATE,
-    },
-    timestamp: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
+    acknowledgedAt: {
+      type: Date,
+      required: false,
     },
   },
-  {
-    tableName: "notifications",
-    timestamps: false,
-    indexes: [{ fields: ["userId"] }, { fields: ["isRead"] }, { fields: ["timestamp"] }],
-  },
+  { _id: false },
 );
+
+const notificationSchema = new mongoose.Schema({
+  type: {
+    type: String,
+    enum: ["emergency", "ambulance", "hospital", "warning", "success", "info"],
+    required: true,
+    default: "info",
+  },
+  priority: {
+    type: String,
+    enum: ["low", "normal", "high", "critical"],
+    required: true,
+    default: "normal",
+  },
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  message: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  details: {
+    type: String,
+    default: "",
+    trim: true,
+  },
+  recipients: {
+    type: [recipientSchema],
+    default: [],
+  },
+  relatedEmergency: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Emergency",
+    required: false,
+  },
+  relatedAmbulance: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Ambulance",
+    required: false,
+  },
+  relatedHospital: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Hospital",
+    required: false,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  expiresAt: {
+    type: Date,
+    required: false,
+  },
+  escalatedAt: {
+    type: Date,
+    required: false,
+  },
+});
+
+notificationSchema.index({ "recipients.userId": 1 });
+notificationSchema.index({ "recipients.read": 1 });
+notificationSchema.index({ "recipients.acknowledged": 1 });
+notificationSchema.index({ createdAt: -1 });
+notificationSchema.index({ "recipients.userId": 1, "recipients.read": 1, createdAt: -1 });
+
+const Notification = mongoose.model("Notification", notificationSchema);
 
 export default Notification;

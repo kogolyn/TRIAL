@@ -7,7 +7,8 @@ function ProtectedRoute({ user, role, children }) {
   }
 
   // ⛔ Logged in but wrong role
-  if (role && user.role !== role) {
+  const allowedRoles = Array.isArray(role) ? role : role ? [role] : [];
+  if (allowedRoles.length && !allowedRoles.includes(user.role)) {
     return (
       <div style={{
         minHeight: "100vh",

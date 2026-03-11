@@ -4,7 +4,7 @@ import ambulanceImg from "../../assets/ambulanceimage.jpg";
 import logoImg from "../../assets/logo.png";
 import Navbar from "../../components/Landing/Navbar";
 
-function EmergencyRequest({ onProceed }) {
+function EmergencyRequest({ onLogin, onRegister }) {
   const [location, setLocation] = useState(null);
   const [status, setStatus] = useState("Idle");
   const [showConfirmPage, setShowConfirmPage] = useState(false);
@@ -50,7 +50,7 @@ function EmergencyRequest({ onProceed }) {
   return (
     <div className="min-h-screen font-sans bg-green-50">
 
-      <Navbar onProceed={onProceed} />
+      <Navbar onLogin={onLogin} onRegister={onRegister} />
 
       {/* HOME SECTION */}
       <section

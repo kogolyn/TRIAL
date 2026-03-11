@@ -1,131 +1,211 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
+import { api } from '../../lib/api';
 
-const nakuruAmbulances = [
-    { id: 'AMB-001', name: 'AMB-001 – Nakuru War Memorial', status: 'Available' },
-    { id: 'AMB-002', name: 'AMB-002 – Rift Valley PGH', status: 'Available' },
-    { id: 'AMB-003', name: 'AMB-003 – Nakuru Level 5 Hospital', status: 'Available' },
-    { id: 'AMB-004', name: 'AMB-004 – Flamboyant Medical Centre', status: 'En Route' },
-    { id: 'AMB-005', name: 'AMB-005 – Nakuru East Sub-County', status: 'Available' },
+const STATUS_OPTIONS = [
+    { label: 'Assigned', value: 'assigned' },
+    { label: 'En Route', value: 'en_route' },
+    { label: 'Arrived', value: 'arrived' },
+    { label: 'Transporting', value: 'transporting' },
+    { label: 'Completed', value: 'completed' },
 ];
 
-const nakuruHospitals = [
-    { id: 'H-001', name: 'Nakuru War Memorial Hospital', beds: 12 },
-    { id: 'H-002', name: 'Rift Valley Provincial General Hospital', beds: 8 },
-    { id: 'H-003', name: 'Nakuru Level 5 Hospital', beds: 5 },
-    { id: 'H-004', name: 'Flamboyant Medical Centre', beds: 3 },
-    { id: 'H-005', name: 'Nakuru East Sub-County Hospital', beds: 7 },
-];
+export default function CoordinationActions({
+    incidents = [],
+    selectedIncident,
+    selectedIncidentId,
+    onSelectIncident,
+    ambulances,
+    hospitals,
+    onActionComplete,
+}) {
+    const [selectedAmbulanceId, setSelectedAmbulanceId] = useState('');
+    const [selectedHospitalId, setSelectedHospitalId] = useState('');
+    const [selectedStatus, setSelectedStatus] = useState('en_route');
+    const [submitting, setSubmitting] = useState(false);
+    const [message, setMessage] = useState('');
+    const [error, setError] = useState('');
 
-function Dropdown({ options, onSelect, renderItem, placeholder, open, setOpen, buttonLabel, buttonClass }) {
-    const ref = useRef(null);
-
-    useEffect(() => {
-        function handleClickOutside(e) {
-            if (ref.current && !ref.current.contains(e.target)) {
-                setOpen(false);
-            }
-        }
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [setOpen]);
-
-    return (
-        <div className="relative flex-1" ref={ref}>
-            <button
-                className={`w-full py-4 px-4 border-none text-white font-bold text-xs rounded shadow hover:shadow-md hover:opacity-90 transition-all ${buttonClass}`}
-                onClick={() => setOpen(!open)}
-            >
-                {buttonLabel}
-                <span className="ml-2">▾</span>
-            </button>
-            {open && (
-                <div className="absolute top-full left-0 z-50 mt-1 w-64 bg-white border border-gray-200 rounded shadow-lg overflow-hidden">
-                    <div className="px-3 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase border-b border-gray-200">
-                        {placeholder}
-                    </div>
-                    <ul className="max-h-52 overflow-y-auto">
-                        {options.map((opt) => (
-                            <li
-                                key={opt.id}
-                                className="px-4 py-3 text-xs text-gray-700 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0"
-                                onClick={() => { onSelect(opt); setOpen(false); }}
-                            >
-                                {renderItem(opt)}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-        </div>
+    const availableAmbulances = useMemo(
+        () => ambulances.filter((item) => item.status === 'available' || item.id === selectedIncident?.assignedAmbulance?.id),
+        [ambulances, selectedIncident],
     );
-}
 
-export default function CoordinationActions() {
-    const [ambulanceOpen, setAmbulanceOpen] = useState(false);
-    const [hospitalOpen, setHospitalOpen] = useState(false);
-    const [selectedAmbulance, setSelectedAmbulance] = useState(null);
-    const [selectedHospital, setSelectedHospital] = useState(null);
+    const canAct = Boolean(selectedIncident?.recordId);
+
+    function handleIncidentChange(event) {
+        const value = event.target.value || null;
+        setError('');
+        setMessage('');
+        onSelectIncident?.(value);
+    }
+
+    async function runAction(fn, successMessage) {
+        setSubmitting(true);
+        setError('');
+        setMessage('');
+        try {
+            await fn();
+            setMessage(successMessage);
+            await onActionComplete?.();
+        } catch (err) {
+            setError(err.message || 'Action failed');
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    function handleAssignAmbulance() {
+        if (!canAct || !selectedAmbulanceId) {
+            setError('Select an incident and ambulance first');
+            return;
+        }
+
+        runAction(
+            () => api.post(`/dispatcher/incidents/${selectedIncident.recordId}/assign`, { ambulanceId: selectedAmbulanceId }),
+            'Ambulance assigned',
+        );
+    }
+
+    function handleNotifyHospital() {
+        if (!canAct || !selectedHospitalId) {
+            setError('Select an incident and hospital first');
+            return;
+        }
+
+        runAction(
+            () => api.post(`/dispatcher/incidents/${selectedIncident.recordId}/notify-hospital`, { hospitalProfileId: selectedHospitalId }),
+            'Hospital notified',
+        );
+    }
+
+    function handleUpdateStatus() {
+        if (!canAct || !selectedStatus) {
+            setError('Select an incident and status');
+            return;
+        }
+
+        runAction(
+            () => api.patch(`/dispatcher/incidents/${selectedIncident.recordId}/status`, { status: selectedStatus }),
+            `Status updated to ${selectedStatus}`,
+        );
+    }
 
     return (
         <div className="bg-white rounded-lg shadow-sm flex flex-col overflow-visible border border-gray-200 pb-5">
             <div className="bg-gray-50 text-gray-800 px-4 py-3 text-sm font-bold uppercase border-b border-gray-200">
                 <h3>COORDINATION ACTIONS</h3>
             </div>
-            <div className="p-5 flex gap-5">
-                {/* Assign Ambulance Dropdown */}
-                <Dropdown
-                    open={ambulanceOpen}
-                    setOpen={(val) => { setAmbulanceOpen(val); if (val) setHospitalOpen(false); }}
-                    buttonLabel={selectedAmbulance ? selectedAmbulance.id : 'ASSIGN AMBULANCE'}
-                    buttonClass="bg-blue-600"
-                    placeholder="Nakuru – Available Units"
-                    options={nakuruAmbulances}
-                    onSelect={setSelectedAmbulance}
-                    renderItem={(a) => (
-                        <div>
-                            <span className="font-semibold text-gray-800">{a.name}</span>
-                            <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold ${a.status === 'Available' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                                {a.status}
-                            </span>
-                        </div>
-                    )}
-                />
 
-                {/* Notify Hospital Dropdown */}
-                <Dropdown
-                    open={hospitalOpen}
-                    setOpen={(val) => { setHospitalOpen(val); if (val) setAmbulanceOpen(false); }}
-                    buttonLabel={selectedHospital ? selectedHospital.id : 'NOTIFY HOSPITAL'}
-                    buttonClass="bg-green-700"
-                    placeholder="Nakuru – Hospitals"
-                    options={nakuruHospitals}
-                    onSelect={setSelectedHospital}
-                    renderItem={(h) => (
-                        <div>
-                            <span className="font-semibold text-gray-800">{h.name}</span>
-                            <span className="ml-2 text-gray-400">· {h.beds} beds avail.</span>
-                        </div>
-                    )}
-                />
-
-                {/* Update Status */}
-                <button className="flex-1 py-4 px-4 border-none text-white font-bold text-xs rounded shadow hover:shadow-md hover:opacity-90 active:translate-y-0 active:shadow-sm transition-all bg-orange-600">
-                    UPDATE STATUS
-                </button>
+            <div className="px-5 pt-4 text-xs text-gray-600">
+                {selectedIncident ? (
+                    <span>
+                        Selected Incident: <strong>{selectedIncident.id}</strong> ({selectedIncident.status})
+                    </span>
+                ) : (
+                    <span>Select an incident from the table to enable actions.</span>
+                )}
             </div>
 
-            {/* Selection Summary */}
-            {(selectedAmbulance || selectedHospital) && (
-                <div className="mx-5 mb-1 p-3 bg-gray-50 border border-gray-200 rounded text-xs text-gray-600 flex gap-4">
-                    {selectedAmbulance && (
-                        <span>🚑 <strong>Ambulance:</strong> {selectedAmbulance.name}</span>
-                    )}
-                    {selectedHospital && (
-                        <span>🏥 <strong>Hospital:</strong> {selectedHospital.name}</span>
-                    )}
+            <div className="px-5 pt-3">
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Select Incident</label>
+                <select
+                    value={selectedIncidentId || ''}
+                    onChange={handleIncidentChange}
+                    disabled={submitting || incidents.length === 0}
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                >
+                    <option value="">-- Select incident --</option>
+                    {incidents
+                        .filter((inc) => inc.status === 'Pending')
+                        .map((inc) => (
+                        <option key={inc.recordId} value={inc.recordId}>
+                            {inc.id} - {inc.condition || inc.victimReport?.emergencyType || 'Unknown'} - {inc.location || 'No address'} ({inc.status})
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Assign Ambulance</label>
+                    <select
+                        value={selectedAmbulanceId}
+                        onChange={(e) => setSelectedAmbulanceId(e.target.value)}
+                        disabled={!canAct || submitting}
+                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                    >
+                        <option value="">Select ambulance</option>
+                        {availableAmbulances.map((amb) => (
+                            <option key={amb.id} value={amb.id}>
+                                {amb.unitCode} - {amb.name} ({amb.status})
+                            </option>
+                        ))}
+                    </select>
+                    <button
+                        onClick={handleAssignAmbulance}
+                        disabled={!canAct || submitting}
+                        className="mt-2 w-full bg-blue-600 text-white text-xs font-bold rounded py-2 disabled:opacity-50"
+                    >
+                        ASSIGN
+                    </button>
+                </div>
+
+                <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Notify Hospital</label>
+                    <select
+                        value={selectedHospitalId}
+                        onChange={(e) => setSelectedHospitalId(e.target.value)}
+                        disabled={!canAct || submitting}
+                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                    >
+                        <option value="">Select hospital</option>
+                        {hospitals.map((hospital) => (
+                            <option key={hospital.id} value={hospital.id}>
+                                {hospital.name} ({hospital.availableBeds ?? 0} beds)
+                            </option>
+                        ))}
+                    </select>
+                    <button
+                        onClick={handleNotifyHospital}
+                        disabled={!canAct || submitting}
+                        className="mt-2 w-full bg-green-700 text-white text-xs font-bold rounded py-2 disabled:opacity-50"
+                    >
+                        NOTIFY
+                    </button>
+                </div>
+
+                <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Update Status</label>
+                    <select
+                        value={selectedStatus}
+                        onChange={(e) => setSelectedStatus(e.target.value)}
+                        disabled={!canAct || submitting}
+                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                    >
+                        {STATUS_OPTIONS.map((status) => (
+                            <option key={status.value} value={status.value}>{status.label}</option>
+                        ))}
+                    </select>
+                    <button
+                        onClick={handleUpdateStatus}
+                        disabled={!canAct || submitting}
+                        className="mt-2 w-full bg-orange-600 text-white text-xs font-bold rounded py-2 disabled:opacity-50"
+                    >
+                        UPDATE
+                    </button>
+                </div>
+            </div>
+
+            {message && (
+                <div className="mx-5 mt-1 rounded border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
+                    {message}
+                </div>
+            )}
+            {error && (
+                <div className="mx-5 mt-1 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                    {error}
                 </div>
             )}
         </div>
     );
 }
-

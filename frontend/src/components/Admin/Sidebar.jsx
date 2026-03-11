@@ -35,7 +35,7 @@ const Sidebar = ({ activeSection, setActiveSection, sidebarOpen, setSidebarOpen 
       items: [
         { id: 'analytics', label: 'Analytics', icon: BarChart3, description: 'Reports & insights' },
         { id: 'settings', label: 'Settings', icon: Settings, description: 'System configuration' },
-        { id: 'help', label: 'Help & Support', icon: HelpCircle, description: 'Documentation' },
+        { id: 'logs', label: 'Logs', icon: HelpCircle, description: 'System logs and activity tracking' },
       ]
     }
   ];
@@ -136,7 +136,7 @@ const Sidebar = ({ activeSection, setActiveSection, sidebarOpen, setSidebarOpen 
   );
 };
 
-const NavItem = ({ icon: Icon, label, description, active, onClick, collapsed, badge }) => (
+const NavItem = ({ icon, label, description, active, onClick, collapsed, badge }) => (
   <button
     onClick={onClick}
     className={`w-full group relative ${
@@ -147,11 +147,9 @@ const NavItem = ({ icon: Icon, label, description, active, onClick, collapsed, b
   >
     <div className="flex items-center space-x-3 px-4 py-3">
       <div className="relative">
-        <Icon
-          className={`w-5 h-5 flex-shrink-0 ${
-            active ? 'text-white' : 'text-gray-400 group-hover:text-white'
-          }`}
-        />
+        {React.createElement(icon, {
+          className: `w-5 h-5 flex-shrink-0 ${active ? 'text-white' : 'text-gray-400 group-hover:text-white'}`,
+        })}
         {collapsed && badge > 0 && (
           <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
             {badge}

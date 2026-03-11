@@ -1,13 +1,21 @@
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-function Navbar({ onProceed }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+function Navbar() {
+  const navigate = useNavigate();
 
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  };
+
+  const handleLogin = () => {
+    navigate('/login');
+  };
+
+  const handleRegister = () => {
+    navigate('/register');
   };
 
   return (
@@ -44,13 +52,13 @@ function Navbar({ onProceed }) {
       <div className="flex gap-3 items-center">
         <button 
           className="px-6 py-2.5 rounded-[10px] border-2 border-[#FF3B30] bg-transparent text-[#FF3B30] text-sm font-bold cursor-pointer font-['Segoe_UI',sans-serif] transition-all duration-200 ease-in-out hover:bg-[#FF3B30] hover:text-white"
-          onClick={onProceed}
+          onClick={handleLogin}
         >
           Login
         </button>
         <button 
           className="px-6 py-2.5 rounded-[10px] border-2 border-[#FF3B30] bg-[#FF3B30] text-white text-sm font-bold cursor-pointer font-['Segoe_UI',sans-serif] transition-all duration-200 ease-in-out hover:bg-[#e63329]"
-          onClick={onProceed}
+          onClick={handleRegister}
         >
           Register
         </button>

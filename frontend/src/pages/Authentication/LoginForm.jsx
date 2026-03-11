@@ -6,7 +6,8 @@ function LoginForm({ setUser }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(""); // added error state
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,22 +17,32 @@ function LoginForm({ setUser }) {
         body: JSON.stringify({ email, password }),
       });
       const loggedInUser = response.user;
-      alert(response.message);
-      console.log(`Login successful:`, loggedInUser);
- 
-      // // 1. Save user to App state and LocalStorage
+      const token = response.token;
+      console.log("Login successful:", loggedInUser);
+
+      setError("");
+      setSuccess("Login successful");
+      setTimeout(() => setSuccess(""), 3000);
+
       setUser(loggedInUser);
       localStorage.setItem("user", JSON.stringify(loggedInUser));
+      if (token) {
+        localStorage.setItem("token", token);
+      }
 
-      // // 2. Navigate based on role
-      if (loggedInUser.role === "admin") navigate("/admin");
-      else if (loggedInUser.role === "dispatcher") navigate("/dispatcher");
-      else if (loggedInUser.role === "ambulance") navigate("/ambulance");
-      else navigate("/dashboard");
+      const target =
+        loggedInUser.role === "admin"
+          ? "/admin"
+          : loggedInUser.role === "dispatcher"
+          ? "/dispatcher"
+          : loggedInUser.role === "ambulance"
+          ? "/ambulance"
+          : "/dashboard";
+
+      setTimeout(() => navigate(target), 800);
     } catch (err) {
-      setError(
-        err.message || "Login failed. Check your credentials.",
-      );
+      setSuccess("");
+      setError(err.message || "Login failed. Check your credentials.");
     }
   };
 
@@ -63,7 +74,7 @@ function LoginForm({ setUser }) {
         />
       </div>
 
-      {error && <p className="text-red-600 text-sm mb-4">{error}</p>} {/* display error */}
+      {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
 
       <button
         type="submit"
@@ -71,6 +82,13 @@ function LoginForm({ setUser }) {
       >
         Sign In
       </button>
+
+      {success && (
+        <p className="text-green-600 text-sm mt-3 text-center">
+          {success}
+        </p>
+      )}
+
     </form>
   );
 }
