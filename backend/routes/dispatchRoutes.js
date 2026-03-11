@@ -1,5 +1,5 @@
 import express from "express";
-import DispatchMessage from "../models/mongo/DispatchMessage.mongo.js";
+import DispatchMessage from "../models/ambulance/DispatchMessage.mongo.js";
 
 const router = express.Router();
 

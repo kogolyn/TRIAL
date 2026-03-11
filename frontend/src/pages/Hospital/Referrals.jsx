@@ -265,7 +265,7 @@ export default function Referrals() {
                     {[
                       ["Reason", ref.reason],
                       ["Transport", ref.transport],
-                      [isIncoming ? "Their Dr." : "Our Dr.", isIncoming ? `${ref.sendingDoctor || "-"} · ${ref.time}` : `${ref.ourDoctor || "-"} · ${ref.time}`],
+                      [isIncoming ? "Their Dr." : "Our Dr.", isIncoming ? `${ref.sendingDoctor || "-"} - ${ref.time}` : `${ref.ourDoctor || "-"} - ${ref.time}`],
                     ].map(([label, val]) => (
                       <div key={label} className="flex items-start gap-2">
                         <span className="text-slate-400 w-16 flex-shrink-0">{label}</span>
@@ -329,7 +329,7 @@ export default function Referrals() {
                 <div>
                   <h3 className="text-xl font-bold text-slate-800">{modal.patient}</h3>
                   <p className="text-sm text-slate-500">
-                    {modal.id} · {modal.condition}
+                    {modal.id} - {modal.condition}
                   </p>
                 </div>
                 <button onClick={() => setModal(null)}>
@@ -499,3 +499,4 @@ export default function Referrals() {
     </div>
   );
 }
+

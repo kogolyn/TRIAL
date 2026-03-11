@@ -1,4 +1,4 @@
-import Notification from "../models/mongo/Notification.mongo.js";
+import Notification from "../models/ambulance/Notification.mongo.js";
 
 class AmbulanceNotificationService {
   constructor(io) {
@@ -50,7 +50,13 @@ class AmbulanceNotificationService {
     }
 
     if (recipients.includes("hospital")) {
-      this.io.to("hospital-room").emit("ambulance-notification", notificationPayload);
+      if (notificationPayload.hospitalUserId) {
+        this.io
+          .to(`hospital-user-${notificationPayload.hospitalUserId}`)
+          .emit("ambulance-notification", notificationPayload);
+      } else {
+        this.io.to("hospital-room").emit("ambulance-notification", notificationPayload);
+      }
     }
 
     console.log(
@@ -73,6 +79,8 @@ class AmbulanceNotificationService {
       priority: "high",
       recipients: ["hospital", "dispatcher"],
       ambulanceId: patientCare.ambulanceId,
+      hospitalId: patientCare.facilityId || null,
+      hospitalUserId: patientCare.hospitalUserId || null,
       payload: patientCare,
     });
   }
@@ -86,6 +94,8 @@ class AmbulanceNotificationService {
       priority,
       recipients: ["hospital", "dispatcher"],
       ambulanceId: vitals.ambulanceId,
+      hospitalId: vitals.facilityId || null,
+      hospitalUserId: vitals.hospitalUserId || null,
       payload: vitals,
     });
   }
@@ -98,6 +108,8 @@ class AmbulanceNotificationService {
       priority: "critical",
       recipients: ["hospital", "dispatcher", "ambulance"],
       ambulanceId: vitals.ambulanceId,
+      hospitalId: vitals.facilityId || null,
+      hospitalUserId: vitals.hospitalUserId || null,
       playSound: true,
       payload: vitals,
     });
@@ -152,7 +164,7 @@ class AmbulanceNotificationService {
     });
   }
 
-  async notifyHospitalArrival(ambulanceId, hospitalId, eta) {
+  async notifyHospitalArrival(ambulanceId, hospitalId, eta, hospitalUserId = null) {
     return this.send({
       type: "arrival-notice",
       title: "Arrival Notice",
@@ -161,6 +173,7 @@ class AmbulanceNotificationService {
       recipients: ["hospital"],
       ambulanceId,
       hospitalId,
+      hospitalUserId,
       payload: { eta },
     });
   }

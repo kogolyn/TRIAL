@@ -9,8 +9,10 @@ function FacilitiesMapPage() {
   const location = useLocation();
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
+  const markersLayerRef = useRef(null);
 
   const [facilities, setFacilities] = useState(location.state?.facilities || []);
+  const selectedFacility = location.state?.selectedFacility || null;
   const ambulance = location.state?.ambulance || {
     id: "AMB-04",
     lat: -0.2827,
@@ -26,9 +28,8 @@ function FacilitiesMapPage() {
           id: facility.id,
           name: facility.name,
           level: facility.type || "Hospital",
-          beds: `${facility.bedsAvailable || 0} beds avail.`,
-          wait: "Live",
-          status: facility.bedsAvailable > 0 ? "available" : "busy",
+          bedsAvailable: Number(facility.bedsAvailable || 0),
+          status: Number(facility.bedsAvailable || 0) > 0 ? "available" : "busy",
           lat: Number(facility.latitude),
           lng: Number(facility.longitude),
         }));
@@ -50,15 +51,7 @@ function FacilitiesMapPage() {
       attribution: "&copy; OpenStreetMap contributors",
     }).addTo(map);
 
-    const ambulanceIcon = L.divIcon({
-      html: '<div style="width:32px;height:32px;background:#dc2626;border-radius:9999px;color:white;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid white;">A</div>',
-      className: "",
-      iconSize: [32, 32],
-    });
-
-    L.marker([ambulance.lat, ambulance.lng], { icon: ambulanceIcon })
-      .addTo(map)
-      .bindPopup(`Ambulance ${ambulance.id}`);
+    markersLayerRef.current = L.layerGroup().addTo(map);
 
     return () => {
       if (mapRef.current) {
@@ -66,28 +59,68 @@ function FacilitiesMapPage() {
         mapRef.current = null;
       }
     };
-  }, [ambulance.id, ambulance.lat, ambulance.lng]);
+  }, [ambulance.lat, ambulance.lng]);
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !markersLayerRef.current) return;
+
     const map = mapRef.current;
+    const layer = markersLayerRef.current;
+    layer.clearLayers();
+
+    const bounds = [];
+
+    const ambulanceIcon = L.divIcon({
+      html: '<div style="width:32px;height:32px;background:#dc2626;border-radius:9999px;color:white;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid white;">AMB</div>',
+      className: "",
+      iconSize: [32, 32],
+    });
+
+    L.marker([ambulance.lat, ambulance.lng], { icon: ambulanceIcon })
+      .addTo(layer)
+      .bindPopup(`Ambulance ${ambulance.id}`);
+    bounds.push([ambulance.lat, ambulance.lng]);
 
     facilities.forEach((facility) => {
       if (Number.isNaN(facility.lat) || Number.isNaN(facility.lng)) return;
-      const color = facility.status === "available" ? "#16a34a" : "#ef4444";
+
+      const isSelected = selectedFacility?.id === facility.id;
+      const color = isSelected ? "#2563eb" : facility.status === "available" ? "#16a34a" : "#ef4444";
+      const label = isSelected ? "S" : "H";
+
       const icon = L.divIcon({
-        html: `<div style="width:28px;height:28px;background:${color};border-radius:9999px;color:white;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid white;">H</div>`,
+        html: `<div style="width:30px;height:30px;background:${color};border-radius:9999px;color:white;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid white;">${label}</div>`,
         className: "",
-        iconSize: [28, 28],
+        iconSize: [30, 30],
       });
 
       L.marker([facility.lat, facility.lng], { icon })
-        .addTo(map)
+        .addTo(layer)
         .bindPopup(
-          `<strong>${facility.name}</strong><br/>${facility.beds}<br/>Status: ${facility.status}`,
+          `<strong>${facility.name}</strong><br/>Beds available: ${facility.bedsAvailable}<br/>Status: ${facility.status}`,
         );
+
+      bounds.push([facility.lat, facility.lng]);
     });
-  }, [facilities]);
+
+    if (selectedFacility && Number.isFinite(selectedFacility.lat) && Number.isFinite(selectedFacility.lng)) {
+      L.polyline(
+        [
+          [ambulance.lat, ambulance.lng],
+          [selectedFacility.lat, selectedFacility.lng],
+        ],
+        {
+          color: "#2563eb",
+          weight: 4,
+          opacity: 0.8,
+        },
+      ).addTo(layer);
+    }
+
+    if (bounds.length > 1) {
+      map.fitBounds(bounds, { padding: [40, 40] });
+    }
+  }, [ambulance.id, ambulance.lat, ambulance.lng, facilities, selectedFacility]);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">

@@ -1,6 +1,6 @@
 import express from "express";
 import mongoose from "mongoose";
-import Vitals from "../models/mongo/Vitals.mongo.js";
+import Vitals from "../models/ambulance/Vitals.mongo.js";
 import IncomingAlert from "../models/hospital/IncomingAlert.model.js";
 
 const router = express.Router();

@@ -41,5 +41,4 @@ export function requireRole(...roles) {
     return next();
   };
 }
-
 export const authenticateToken = requireAuth;

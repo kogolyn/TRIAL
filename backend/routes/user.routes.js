@@ -47,6 +47,7 @@ router.post("/signup", async (req, res) => {
       name: newUser.name,
       email: newUser.email,
       role: newUser.role,
+      ambulanceId: newUser.ambulanceId || null,
     });
 
     console.log(`${req.body.name} user created successfully`);
@@ -87,6 +88,7 @@ router.post("/login", async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      ambulanceId: user.ambulanceId || null,
     });
 
     res.status(200).json({

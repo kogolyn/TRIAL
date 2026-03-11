@@ -1,7 +1,7 @@
 import express from "express";
-import AmbulanceLocation from "../models/mongo/AmbulanceLocation.mongo.js";
-import PatientCare from "../models/mongo/PatientCare.mongo.js";
-import EmergencyAlert from "../models/mongo/EmergencyAlert.mongo.js";
+import AmbulanceLocation from "../models/ambulance/AmbulanceLocation.mongo.js";
+import PatientCare from "../models/ambulance/PatientCare.mongo.js";
+import EmergencyAlert from "../models/ambulance/EmergencyAlert.mongo.js";
 
 const router = express.Router();
 

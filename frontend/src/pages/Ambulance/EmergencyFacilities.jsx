@@ -6,6 +6,7 @@ function EmergencyFacilities({
   selectedFacilityId,
   onSelectFacility,
   onViewAllMap,
+  onRefreshFacilities,
 }) {
   const availableFacilities = facilities.filter((facility) => facility.canAccept);
   const sortedFacilities = [...facilities].sort((a, b) => {
@@ -25,6 +26,7 @@ function EmergencyFacilities({
           <p className="mt-2 text-xs text-gray-400">Beds needed: {requiredBeds}</p>
         </div>
         <button
+          onClick={onRefreshFacilities}
           className="w-9 h-9 rounded-full border border-[#334155] text-gray-300 hover:text-white hover:border-[#4da3ff] transition-colors"
           aria-label="Refresh facilities"
         >
@@ -48,7 +50,7 @@ function EmergencyFacilities({
                       : "bg-[#1a1f2e] border-[#00d37d] text-[#8af5c0] hover:bg-[#12302f]"
                   }`}
                 >
-                  {facility.name} ({facility.bedsAvailable})
+                  {facility.name} ({facility.bedsAvailable} beds)
                 </button>
               );
             })}
@@ -89,7 +91,7 @@ function EmergencyFacilities({
               <div className="my-3 h-px bg-[#3a445b]" />
 
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-200">{facility.beds}</span>
+                <span className="text-gray-200">Beds available: {facility.bedsAvailable}</span>
                 <span
                   className={`font-bold ${
                     parseInt(facility.wait, 10) < 20 ? "text-green-400" : "text-yellow-400"

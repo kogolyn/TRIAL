@@ -23,34 +23,32 @@ function NavigationMap({ ambulance, incident, hospital, navigation, currentSpeed
     }).addTo(map);
 
     const ambulanceIcon = L.divIcon({
-      html: '<div class="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center text-white text-xl shadow-lg border-2 border-white">AMB</div>',
+      html: '<div style="width:40px;height:40px;background:#dc2626;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;border:2px solid #fff;">AMB</div>',
+      className: "",
+      iconSize: [40, 40],
+    });
+
+    const incidentIcon = L.divIcon({
+      html: '<div style="width:38px;height:38px;background:#f59e0b;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;border:2px solid #fff;">INC</div>',
+      className: "",
+      iconSize: [38, 38],
+    });
+
+    const hospitalIcon = L.divIcon({
+      html: '<div style="width:40px;height:40px;background:#16a34a;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;border:2px solid #fff;">H</div>',
       className: "",
       iconSize: [40, 40],
     });
 
     L.marker([ambulance.lat, ambulance.lng], { icon: ambulanceIcon })
       .addTo(map)
-      .bindPopup(
-        `<strong>Ambulance ${ambulance.id}</strong><br>Speed: ${currentSpeed} km/h`,
-      );
+      .bindPopup(`<strong>Ambulance ${ambulance.id}</strong><br/>Speed: ${currentSpeed} km/h`);
 
     if (incident && Number.isFinite(incident.lat) && Number.isFinite(incident.lng)) {
-      const incidentIcon = L.divIcon({
-        html: '<div class="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xl shadow-lg border-2 border-white">INC</div>',
-        className: "",
-        iconSize: [40, 40],
-      });
-
       L.marker([incident.lat, incident.lng], { icon: incidentIcon })
         .addTo(map)
         .bindPopup("<strong>Incident Location</strong>");
     }
-
-    const hospitalIcon = L.divIcon({
-      html: '<div class="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white text-xl shadow-lg border-2 border-white">H</div>',
-      className: "",
-      iconSize: [40, 40],
-    });
 
     L.marker([hospital.lat, hospital.lng], { icon: hospitalIcon })
       .addTo(map)
@@ -65,7 +63,7 @@ function NavigationMap({ ambulance, incident, hospital, navigation, currentSpeed
     L.polyline(routeCoordinates, {
       color: "#ef4444",
       weight: 4,
-      opacity: 0.7,
+      opacity: 0.75,
       dashArray: "10, 10",
     }).addTo(map);
 
@@ -108,12 +106,12 @@ function NavigationMap({ ambulance, incident, hospital, navigation, currentSpeed
     ambulance.id,
     ambulance.lat,
     ambulance.lng,
-    currentSpeed,
+    incident?.lat,
+    incident?.lng,
     hospital.lat,
     hospital.lng,
     hospital.name,
-    incident?.lat,
-    incident?.lng,
+    currentSpeed,
   ]);
 
   return (
@@ -121,7 +119,7 @@ function NavigationMap({ ambulance, incident, hospital, navigation, currentSpeed
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 border-b border-blue-800">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl backdrop-blur-sm">
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white font-bold backdrop-blur-sm">
               Go
             </div>
             <div>

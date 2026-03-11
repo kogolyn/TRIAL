@@ -1,13 +1,13 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Header() {
   const navigate = useNavigate();
 
-  function handleLogout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
+function handleLogout() {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    navigate("/login");
   }
 
   return (

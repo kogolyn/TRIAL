@@ -354,7 +354,6 @@ function AmbulanceDashboard() {
   };
 
   const handleSubmitVitals = async () => {
-    console.log("Vitals submit clicked");
     if (!selectedFacility?.id) {
       setError("Select an emergency facility first so live vitals can be sent to hospital.");
       return;

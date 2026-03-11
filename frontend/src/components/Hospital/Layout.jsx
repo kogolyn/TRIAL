@@ -30,6 +30,7 @@ export default function Layout({ children }) {
   const handleLogout = () => {
     if (window.confirm("Are you sure you want to logout?")) {
       localStorage.removeItem("user");
+      localStorage.removeItem("token");
       navigate("/login");
     }
   };

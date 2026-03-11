@@ -11,14 +11,14 @@ function LoginForm({ setUser }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     try {
-      const response = await apiRequest("/users/login", {
+      const data = await apiRequest("/users/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      const loggedInUser = response.user;
-      const token = response.token;
-      console.log("Login successful:", loggedInUser);
+      const loggedInUser = data.user;
+      const token = data.token;
 
       setError("");
       setSuccess("Login successful");

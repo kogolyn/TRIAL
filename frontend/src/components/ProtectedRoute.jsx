@@ -1,27 +1,30 @@
 import { Navigate } from "react-router-dom";
 
 function ProtectedRoute({ user, role, children }) {
-  // 🔐 Not logged in
-  if (!user) {
+  const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+  const activeUser = storedUser || user;
+
+  if (!activeUser) {
     return <Navigate to="/login" replace />;
   }
 
-  // ⛔ Logged in but wrong role
   const allowedRoles = Array.isArray(role) ? role : role ? [role] : [];
-  if (allowedRoles.length && !allowedRoles.includes(user.role)) {
+  if (allowedRoles.length && !allowedRoles.includes(activeUser.role)) {
     return (
-      <div style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#f9fafb",
-        flexDirection: "column",
-        textAlign: "center",
-        padding: "20px"
-      }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#f9fafb",
+          flexDirection: "column",
+          textAlign: "center",
+          padding: "20px",
+        }}
+      >
         <h1 style={{ fontSize: "28px", color: "#dc2626", marginBottom: "10px" }}>
-          ⛔ Access Denied
+          Access Denied
         </h1>
         <p style={{ fontSize: "16px", color: "#4b5563", marginBottom: "20px" }}>
           You do not have permission to access this page.
@@ -34,7 +37,7 @@ function ProtectedRoute({ user, role, children }) {
             color: "#fff",
             border: "none",
             borderRadius: "8px",
-            cursor: "pointer"
+            cursor: "pointer",
           }}
         >
           Go Back

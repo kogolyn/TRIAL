@@ -1,6 +1,6 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
 
@@ -21,8 +21,6 @@ import hospitalLegacyRoutes from "./routes/hospitalRoutes.js";
 import dispatcherRoutes from "./routes/dispatcher.routes.js";
 import emergencyRoutes from "./routes/emergency.js";
 import transferRoutes from "./routes/transferRoutes.js";
-
-dotenv.config({ quiet: true });
 
 const app = express();
 const server = http.createServer(app);
