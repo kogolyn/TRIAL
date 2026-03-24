@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Ambulance, Clock, User, Phone, Activity } from 'lucide-react';
+import { api } from "../../lib/api";
 
-const liveAmbulances = [
+const DEFAULT_AMBULANCES = [
   { id: 1, plate: 'KBZ 123A', status: 'en-route',  location: 'Westlands',   lat: -1.2674, lng: 36.8022, patient: 'Cardiac',   distance: '2.3 km', eta: '5 min',  driver: 'John Kamau',   phone: '+254 712 345 678' },
   { id: 2, plate: 'KCA 456B', status: 'available', location: 'CBD',         lat: -1.2864, lng: 36.8172, patient: '-',         distance: '-',      eta: '-',      driver: 'Peter Otieno', phone: '+254 722 111 222' },
   { id: 3, plate: 'KCB 789C', status: 'at-scene',  location: 'Karen',       lat: -1.3197, lng: 36.7070, patient: 'Trauma',    distance: '8.7 km', eta: '12 min', driver: 'James Waweru', phone: '+254 733 444 555' },
@@ -25,17 +26,70 @@ const statusMarkerColor = (s) => ({
 }[s] || '#6B7280');
 
 const TrackingAlt = () => {
+  const [liveAmbulances, setLiveAmbulances] = useState(DEFAULT_AMBULANCES);
   const [selected, setSelected] = useState(null);
   const [filter, setFilter] = useState('all');
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef({});
+  const leafletRef = useRef(null);
+
+  const renderMarkers = (list) => {
+    const L = leafletRef.current;
+    const map = mapInstanceRef.current;
+    if (!L || !map) return;
+
+    Object.values(markersRef.current).forEach((marker) => marker.remove());
+    markersRef.current = {};
+
+    list.forEach((ambulance) => {
+      const color = statusMarkerColor(ambulance.status);
+      const icon = L.divIcon({
+        className: 'custom-marker',
+        html: `<div style="background-color: ${color}; width: 36px; height: 36px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M8 19a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/>
+            <path d="M10 15h4"/><path d="M12 13v4"/>
+          </svg>
+        </div>`,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
+      });
+
+      const marker = L.marker([ambulance.lat, ambulance.lng], { icon })
+        .addTo(map)
+        .bindPopup(`<div style="font-family: Arial;"><strong>${ambulance.plate}</strong><div style="margin-top: 8px; font-size: 12px;"><div><strong>Status:</strong> ${ambulance.status.replace('-', ' ')}</div><div><strong>Location:</strong> ${ambulance.location}</div></div></div>`);
+
+      marker.on('click', () => setSelected(ambulance));
+      markersRef.current[ambulance.id] = marker;
+    });
+  };
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const data = await api.get("/admin/ambulances/live");
+        if (!active) return;
+        if (Array.isArray(data) && data.length) {
+          setLiveAmbulances(data);
+        }
+      } catch {
+        // keep defaults
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const initMap = async () => {
       try {
         const L = (await import('leaflet')).default;
         await import('leaflet/dist/leaflet.css');
+        leafletRef.current = L;
         
         delete L.Icon.Default.prototype._getIconUrl;
         L.Icon.Default.mergeOptions({
@@ -52,27 +106,7 @@ const TrackingAlt = () => {
           }).addTo(map);
           mapInstanceRef.current = map;
 
-          liveAmbulances.forEach(ambulance => {
-            const color = statusMarkerColor(ambulance.status);
-            const icon = L.divIcon({
-              className: 'custom-marker',
-              html: `<div style="background-color: ${color}; width: 36px; height: 36px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                  <path d="M8 19a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/>
-                  <path d="M10 15h4"/><path d="M12 13v4"/>
-                </svg>
-              </div>`,
-              iconSize: [36, 36],
-              iconAnchor: [18, 18],
-            });
-
-            const marker = L.marker([ambulance.lat, ambulance.lng], { icon })
-              .addTo(map)
-              .bindPopup(`<div style="font-family: Arial;"><strong>${ambulance.plate}</strong><div style="margin-top: 8px; font-size: 12px;"><div><strong>Status:</strong> ${ambulance.status.replace('-', ' ')}</div><div><strong>Location:</strong> ${ambulance.location}</div></div></div>`);
-
-            marker.on('click', () => setSelected(ambulance));
-            markersRef.current[ambulance.id] = marker;
-          });
+          renderMarkers(liveAmbulances);
         }
       } catch (error) {
         console.error('Map error:', error);
@@ -93,6 +127,12 @@ const TrackingAlt = () => {
       markersRef.current[selected.id].openPopup();
     }
   }, [selected]);
+
+  useEffect(() => {
+    if (mapInstanceRef.current) {
+      renderMarkers(liveAmbulances);
+    }
+  }, [liveAmbulances]);
 
   const counts = {
     all: liveAmbulances.length,

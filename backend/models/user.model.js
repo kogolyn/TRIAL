@@ -27,6 +27,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    mustResetPassword: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

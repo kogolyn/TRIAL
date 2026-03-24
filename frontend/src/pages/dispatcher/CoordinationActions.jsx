@@ -73,7 +73,7 @@ export default function CoordinationActions({
         }
 
         runAction(
-            () => api.post(`/dispatcher/incidents/${selectedIncident.recordId}/notify-hospital`, { hospitalProfileId: selectedHospitalId }),
+            () => api.post(`/dispatcher/incidents/${selectedIncident.recordId}/notify-hospital`, { hospitalId: selectedHospitalId }),
             'Hospital notified',
         );
     }

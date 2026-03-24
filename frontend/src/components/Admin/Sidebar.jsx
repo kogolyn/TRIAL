@@ -4,6 +4,7 @@ import {
   Activity,
   UserPlus,
   ClipboardCheck,
+  Layers,
   BarChart3,
   Settings,
   HelpCircle,
@@ -28,6 +29,7 @@ const Sidebar = ({ activeSection, setActiveSection, sidebarOpen, setSidebarOpen 
       items: [
         { id: 'registration', label: 'Registration', icon: UserPlus, badge: 3, description: 'New registrations' },
         { id: 'verification', label: 'Verification', icon: ClipboardCheck, badge: 3, description: 'Pending approvals' },
+        { id: 'resources', label: 'Resources', icon: Layers, description: 'Hospital inventory' },
       ]
     },
     {

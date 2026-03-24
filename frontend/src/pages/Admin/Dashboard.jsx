@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AlertTriangle,
   Ambulance,
@@ -13,8 +13,9 @@ import {
   Activity,
   MapPin
 } from 'lucide-react';
+import { api } from "../../lib/api";
 
-const recentActivities = [
+const DEFAULT_RECENT = [
   { id: 1, title: 'Emergency Request #1247', description: 'Cardiac emergency in Westlands',       time: '2 min ago',  status: 'active',  icon: AlertTriangle },
   { id: 2, title: 'New Hospital Registration', description: 'Nairobi West Hospital submitted',    time: '15 min ago', status: 'pending', icon: Building2 },
   { id: 3, title: 'Ambulance Dispatched',      description: 'KBZ 123A en route to Karen',        time: '23 min ago', status: 'success', icon: Ambulance },
@@ -23,13 +24,22 @@ const recentActivities = [
   { id: 6, title: 'Verification Approved',     description: 'Red Cross Ambulance approved',      time: '2 hrs ago',  status: 'success', icon: CheckCircle },
 ];
 
-const liveAmbulances = [
+const DEFAULT_AMBULANCES = [
   { id: 1, plate: 'KBZ 123A', status: 'en-route',  location: 'Westlands',  patient: 'Cardiac',   distance: '2.3 km', eta: '5 min'  },
   { id: 2, plate: 'KCA 456B', status: 'available', location: 'CBD',        patient: '-',         distance: '-',      eta: '-'      },
   { id: 3, plate: 'KCB 789C', status: 'at-scene',  location: 'Karen',      patient: 'Trauma',    distance: '8.7 km', eta: '12 min' },
   { id: 4, plate: 'KDA 012D', status: 'returning', location: 'Upper Hill', patient: 'Completed', distance: '1.2 km', eta: '3 min'  },
   { id: 5, plate: 'KBE 345E', status: 'available', location: 'Parklands',  patient: '-',         distance: '-',      eta: '-'      },
 ];
+
+const iconForActivity = (category) => {
+  if (!category) return Activity;
+  if (category.includes("emergency")) return AlertTriangle;
+  if (category.includes("registration")) return Building2;
+  if (category.includes("tracking")) return Ambulance;
+  if (category.includes("authentication")) return Shield;
+  return Activity;
+};
 
 const activityStatusColor = (s) => ({
   success: 'bg-green-100 text-green-700',
@@ -44,23 +54,68 @@ const ambulanceStatusColor = (s) => ({
   returning:  'bg-purple-100 text-purple-800',
 }[s] || 'bg-gray-100 text-gray-800');
 
-const Dashboard = () => (
-  <div className="space-y-6">
+const Dashboard = () => {
+  const [stats, setStats] = useState(null);
+  const [recentActivities, setRecentActivities] = useState(DEFAULT_RECENT);
+  const [liveAmbulances, setLiveAmbulances] = useState(DEFAULT_AMBULANCES);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const [statsRes, logsRes, ambulancesRes] = await Promise.all([
+          api.get("/admin/stats"),
+          api.get("/admin/logs?limit=6"),
+          api.get("/admin/ambulances/live"),
+        ]);
+
+        if (!active) return;
+        setStats(statsRes);
+        if (Array.isArray(logsRes)) {
+          const mapped = logsRes.map((log) => ({
+            id: log.id,
+            title: log.action || "System Event",
+            description: log.details || log.category || "",
+            time: new Date(log.timestamp).toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            status: log.level === "error" ? "active" : log.level === "warning" ? "pending" : "success",
+            icon: iconForActivity(String(log.category || "")),
+          }));
+          setRecentActivities(mapped);
+        }
+        if (Array.isArray(ambulancesRes)) {
+          setLiveAmbulances(ambulancesRes);
+        }
+      } catch {
+        // keep defaults if request fails
+      }
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return (
+    <div className="space-y-6">
 
     {/* Primary Stats */}
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <StatCard title="Total Emergencies"   value="1,247" change="+12.5%" icon={AlertTriangle} color="bg-red-500"   trend="up" />
-      <StatCard title="Active Ambulances"   value="87"    change="+5.2%"  icon={Ambulance}     color="bg-blue-500"  trend="up" />
-      <StatCard title="Registered Hospitals" value="156"  change="+3.1%"  icon={Building2}     color="bg-green-500" trend="up" />
-      <StatCard title="Avg Response Time"   value="8.5 min" change="-15.3%" icon={Zap}         color="bg-amber-500" trend="down" />
+      <StatCard title="Total Emergencies"   value={stats?.totalEmergencies ?? "—"} change="+12.5%" icon={AlertTriangle} color="bg-red-500"   trend="up" />
+      <StatCard title="Active Ambulances"   value={stats?.activeAmbulances ?? "—"} change="+5.2%"  icon={Ambulance}     color="bg-blue-500"  trend="up" />
+      <StatCard title="Registered Hospitals" value={stats?.registeredHospitals ?? "—"} change="+3.1%"  icon={Building2}     color="bg-green-500" trend="up" />
+      <StatCard title="Avg Response Time"   value={stats?.avgResponseTime ?? "—"} change="-15.3%" icon={Zap}         color="bg-amber-500" trend="down" />
     </div>
 
     {/* Secondary Stats */}
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <MiniStat label="Resolved Today"        value="47"      icon={CheckCircle} color="text-green-600" bg="bg-green-100" />
-      <MiniStat label="Pending Registrations" value="12"      icon={Clock}       color="text-amber-600" bg="bg-amber-100" />
-      <MiniStat label="System Uptime"         value="99.97%"  icon={Shield}      color="text-green-600" bg="bg-green-100" />
-      <MiniStat label="Active Users"          value="2,341"   icon={Users}       color="text-blue-600"  bg="bg-blue-100"  />
+      <MiniStat label="Resolved Today"        value={stats?.resolvedToday ?? "—"}      icon={CheckCircle} color="text-green-600" bg="bg-green-100" />
+      <MiniStat label="Pending Registrations" value={stats?.pendingRegistrations ?? "—"}      icon={Clock}       color="text-amber-600" bg="bg-amber-100" />
+      <MiniStat label="System Uptime"         value={stats?.systemUptime ?? "—"}  icon={Shield}      color="text-green-600" bg="bg-green-100" />
+      <MiniStat label="Active Users"          value={stats?.activeUsers ?? "—"}   icon={Users}       color="text-blue-600"  bg="bg-blue-100"  />
     </div>
 
     {/* Activity + Live Ambulances */}
@@ -135,7 +190,8 @@ const Dashboard = () => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 const StatCard = ({ title, value, change, icon, color, trend }) => (
   <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all border border-gray-100 hover:scale-105 group">

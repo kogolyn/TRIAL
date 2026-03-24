@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { TrendingUp, TrendingDown, AlertTriangle, Ambulance, Building2, Clock } from 'lucide-react';
+import { api } from "../../lib/api";
 
-const monthlyData = [
+const DEFAULT_MONTHLY = [
   { month: 'Jan', emergencies: 320, resolved: 305, avgTime: 12 },
   { month: 'Feb', emergencies: 420, resolved: 410, avgTime: 10 },
   { month: 'Mar', emergencies: 380, resolved: 370, avgTime: 11 },
@@ -14,7 +15,7 @@ const monthlyData = [
   { month: 'Jun', emergencies: 480, resolved: 472, avgTime: 8  },
 ];
 
-const countyData = [
+const DEFAULT_COUNTY = [
   { county: 'Nairobi',    emergencies: 520 },
   { county: 'Mombasa',    emergencies: 180 },
   { county: 'Kisumu',     emergencies: 140 },
@@ -22,7 +23,7 @@ const countyData = [
   { county: 'Eldoret',    emergencies: 95  },
 ];
 
-const registrationData = [
+const DEFAULT_REGISTRATION = [
   { month: 'Jan', hospitals: 5,  ambulances: 12 },
   { month: 'Feb', hospitals: 8,  ambulances: 18 },
   { month: 'Mar', hospitals: 6,  ambulances: 14 },
@@ -33,6 +34,38 @@ const registrationData = [
 
 const Analytics = () => {
   const [period, setPeriod] = useState('6months');
+  const [monthlyData, setMonthlyData] = useState(DEFAULT_MONTHLY);
+  const [countyData, setCountyData] = useState(DEFAULT_COUNTY);
+  const [registrationData, setRegistrationData] = useState(DEFAULT_REGISTRATION);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const data = await api.get("/admin/analytics");
+        if (!active) return;
+        if (Array.isArray(data.monthlyData)) setMonthlyData(data.monthlyData);
+        if (Array.isArray(data.countyData)) setCountyData(data.countyData);
+        if (Array.isArray(data.registrationData)) setRegistrationData(data.registrationData);
+      } catch {
+        // keep defaults if request fails
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const kpis = useMemo(() => {
+    const totalEmergencies = monthlyData.reduce((sum, r) => sum + (r.emergencies || 0), 0);
+    const avgResponse = monthlyData.length
+      ? Math.round(monthlyData.reduce((sum, r) => sum + (r.avgTime || 0), 0) / monthlyData.length)
+      : 0;
+    const newHospitals = registrationData.reduce((sum, r) => sum + (r.hospitals || 0), 0);
+    const newAmbulances = registrationData.reduce((sum, r) => sum + (r.ambulances || 0), 0);
+    return { totalEmergencies, avgResponse, newHospitals, newAmbulances };
+  }, [monthlyData, registrationData]);
 
   return (
     <div className="space-y-6">
@@ -59,10 +92,10 @@ const Analytics = () => {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <KpiCard title="Total Emergencies"   value="2,560" change="+12.5%" trend="up"   icon={AlertTriangle} color="bg-red-500"   />
-        <KpiCard title="Avg Response Time"   value="9.2 min" change="-8.3%" trend="down" icon={Clock}         color="bg-amber-500" />
-        <KpiCard title="New Hospitals"       value="48"    change="+3.1%"  trend="up"   icon={Building2}     color="bg-green-500" />
-        <KpiCard title="New Ambulances"      value="107"   change="+5.2%"  trend="up"   icon={Ambulance}     color="bg-blue-500"  />
+        <KpiCard title="Total Emergencies"   value={kpis.totalEmergencies || "—"} change="+12.5%" trend="up"   icon={AlertTriangle} color="bg-red-500"   />
+        <KpiCard title="Avg Response Time"   value={kpis.avgResponse ? `${kpis.avgResponse} min` : "—"} change="-8.3%" trend="down" icon={Clock}         color="bg-amber-500" />
+        <KpiCard title="New Hospitals"       value={kpis.newHospitals || "—"}    change="+3.1%"  trend="up"   icon={Building2}     color="bg-green-500" />
+        <KpiCard title="New Ambulances"      value={kpis.newAmbulances || "—"}   change="+5.2%"  trend="up"   icon={Ambulance}     color="bg-blue-500"  />
       </div>
 
       {/* Charts Row 1 */}

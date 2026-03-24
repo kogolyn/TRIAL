@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Building2,
   Ambulance,
@@ -11,10 +11,12 @@ import {
   AlertCircle,
   Activity
 } from 'lucide-react';
+import { api } from "../../lib/api";
 
 const Verification = () => {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [credentials, setCredentials] = useState(null);
 
   const [registrations, setRegistrations] = useState([
     { id: 1, type: 'hospital', name: 'Kenyatta National Hospital', location: 'Nairobi CBD', capacity: 1800, status: 'pending', dateSubmitted: '2024-02-08', contact: '+254 712 345 678' },
@@ -25,10 +27,65 @@ const Verification = () => {
     { id: 6, type: 'ambulance', name: 'Rescue Ambulance 007', plateNumber: 'KCX 789Z', status: 'pending', dateSubmitted: '2024-02-09', operator: 'Emergency Rescue Services', contact: '+254 722 555 666' },
   ]);
 
-  const handleStatusChange = (id, newStatus) => {
-    setRegistrations(prev =>
-      prev.map(reg => reg.id === id ? { ...reg, status: newStatus } : reg)
-    );
+  const fetchRegistrations = async () => {
+    try {
+      const data = await api.get(
+        `/admin/registrations${selectedFilter !== "all" ? `?status=${selectedFilter}` : ""}`,
+      );
+      if (Array.isArray(data)) {
+        setRegistrations(
+          data.map((row) => {
+            if (row.type === "hospital") {
+              return {
+                id: row._id || row.id,
+                type: "hospital",
+                name: row.hospital?.facilityName || "Hospital",
+                location: row.hospital?.county || row.hospital?.address || "",
+                capacity: row.hospital?.totalBeds || 0,
+                status: row.status,
+                dateSubmitted: row.createdAt ? new Date(row.createdAt).toISOString().slice(0, 10) : "",
+                contact: row.hospital?.contactPhone || "",
+              };
+            }
+            return {
+              id: row._id || row.id,
+              type: "ambulance",
+              name: row.ambulance?.operatorName || "Ambulance",
+              plateNumber: row.ambulance?.plateNumber || "",
+              status: row.status,
+              dateSubmitted: row.createdAt ? new Date(row.createdAt).toISOString().slice(0, 10) : "",
+              operator: row.ambulance?.operatorName || "",
+              contact: row.ambulance?.contactPhone || "",
+            };
+          }),
+        );
+      }
+    } catch {
+      // keep defaults
+    }
+  };
+
+  useEffect(() => {
+    fetchRegistrations();
+  }, [selectedFilter]);
+
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      if (newStatus === "approved") {
+        const res = await api.patch(`/admin/registrations/${id}/approve`, {});
+        if (res?.tempPassword && res?.createdUser?.email) {
+          setCredentials({
+            email: res.createdUser.email,
+            password: res.tempPassword,
+          });
+        }
+      } else if (newStatus === "rejected") {
+        await api.patch(`/admin/registrations/${id}/reject`, { reason: "Rejected by admin" });
+      }
+      fetchRegistrations();
+    } catch {
+      // no-op
+    }
   };
 
   const getStatusColor = (status) => {
@@ -69,6 +126,31 @@ const Verification = () => {
 
   return (
     <div className="space-y-6">
+      {credentials && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setCredentials(null)}>
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-gray-900 mb-2">New User Created</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Share these credentials with the hospital or ambulance admin. They will be required to reset the password on first login.
+            </p>
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm">
+              <div className="mb-2"><span className="font-semibold">Email:</span> {credentials.email}</div>
+              <div><span className="font-semibold">Temp Password:</span> {credentials.password}</div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setCredentials(null)}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

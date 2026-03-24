@@ -293,6 +293,8 @@ class NotificationService {
       priority: { $in: ["high", "critical"] },
       recipients: { $elemMatch: { acknowledged: false } },
       escalatedAt: { $exists: false },
+      title: { $not: /^Escalated:/i },
+      details: { $not: /ESCALATED_FROM:/ },
     })
       .sort({ createdAt: -1 })
       .limit(50)

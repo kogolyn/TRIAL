@@ -20,6 +20,7 @@ const incomingAlertSchema = new mongoose.Schema(
       respiratoryRate: Number,
     },
     notes: { type: String, default: "" },
+    sourceIncidentId: { type: mongoose.Schema.Types.ObjectId, ref: "Incident", default: null },
     hospitalId: { type: mongoose.Schema.Types.ObjectId, ref: "Hospital", required: true },
     roomAssigned: { type: String, default: null },
     teamNotified: { type: Boolean, default: false },

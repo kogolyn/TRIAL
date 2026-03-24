@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import Ambulance from "../../models/dispatcher/Ambulance.model.js";
 import Incident from "../../models/dispatcher/Incident.model.js";
 import HospitalProfile from "../../models/dispatcher/HospitalProfile.model.js";
+import IncomingAlert from "../../models/hospital/IncomingAlert.model.js";
+import Hospital from "../../models/hospital.model.js";
 import User from "../../models/user.model.js";
 import { emitDispatcherEvent } from "../../realtime/socket.js";
 
@@ -32,6 +34,11 @@ function severityToPriority(severity = "") {
   if (severity === "urgent") return "high";
   if (severity === "minor") return "low";
   return "normal";
+}
+
+function normalizeIncomingSeverity(severity) {
+  if (severity === "critical" || severity === "urgent" || severity === "moderate") return severity;
+  return "moderate";
 }
 
 function haversineKm(lat1, lng1, lat2, lng2) {
@@ -201,6 +208,69 @@ function parsePagination(query) {
   const page = Math.max(1, Number.parseInt(query.page || "1", 10) || 1);
   const limit = Math.min(100, Math.max(1, Number.parseInt(query.limit || "20", 10) || 20));
   return { page, limit, skip: (page - 1) * limit };
+}
+
+async function resolveHospitalRecord(profile) {
+  if (!profile) return null;
+
+  if (profile.userId) {
+    let row = await Hospital.findOne({ userId: profile.userId });
+    if (!row) {
+      row = await Hospital.create({
+        name: profile.name,
+        contactPhone: profile.contactPhone || "",
+        userId: profile.userId,
+      });
+    }
+    return row;
+  }
+
+  let row = await Hospital.findOne({ name: profile.name });
+  if (!row) {
+    row = await Hospital.create({
+      name: profile.name,
+      contactPhone: profile.contactPhone || "",
+    });
+  }
+  return row;
+}
+
+async function upsertIncomingAlert({ incident, hospitalRecord, message = "" }) {
+  if (!incident || !hospitalRecord) return null;
+
+  const ambulance = incident.assignedAmbulance || null;
+  const eta =
+    incident.destinationHospital?.etaMinutes ??
+    incident.responseMetrics?.dispatchEtaMinutes ??
+    null;
+  const safeEta = Number.isFinite(Number(eta)) && Number(eta) > 0 ? Math.round(Number(eta)) : 10;
+  const distanceKm = incident.destinationHospital?.distanceKm;
+
+  const targetHospitalId = hospitalRecord.userId || hospitalRecord._id;
+  const payload = {
+    hospitalId: targetHospitalId,
+    ambulanceId:
+      ambulance?.unitCode ||
+      ambulance?._id?.toString?.() ||
+      incident.assignedAmbulance?.toString?.() ||
+      "UNASSIGNED",
+    patientName: incident.victimReport?.emergencyType
+      ? `${incident.victimReport.emergencyType} Patient`
+      : "Unknown Patient",
+    condition: incident.condition || "Unknown condition",
+    severity: normalizeIncomingSeverity(incident.severity),
+    eta: safeEta,
+    unit: ambulance?.unitCode || ambulance?.name || "Ambulance Unit",
+    distance: Number.isFinite(distanceKm) ? `${Number(distanceKm).toFixed(1)} km` : "",
+    notes: message || incident.description || "",
+    sourceIncidentId: incident._id,
+  };
+
+  return IncomingAlert.findOneAndUpdate(
+    { hospitalId: targetHospitalId, sourceIncidentId: incident._id },
+    { $set: payload },
+    { upsert: true, new: true },
+  );
 }
 
 export async function createIncidentReport(req, res) {
@@ -902,16 +972,24 @@ export async function createOrUpdateHospitalProfile(req, res) {
 
 export async function getHospitals(req, res) {
   try {
-    const query = {};
-    const services = sanitizeServices(req.query.services);
-    if (services.length) query.services = { $all: services };
-    if (req.query.status) query.status = req.query.status;
+    const rows = await Hospital.find()
+      .select("name userId capacityTotal capacityAvailable county contactPhone contactEmail")
+      .sort({ name: 1 })
+      .lean();
 
-    const minBeds = Number(req.query.minBeds);
-    if (Number.isFinite(minBeds)) query.availableBeds = { $gte: minBeds };
+    const hospitals = rows.map((row) => ({
+      id: row.userId ? row.userId.toString() : row._id.toString(),
+      hospitalId: row._id.toString(),
+      userId: row.userId ? row.userId.toString() : null,
+      name: row.name,
+      availableBeds: Number(row.capacityAvailable) || 0,
+      totalBeds: Number(row.capacityTotal) || 0,
+      county: row.county || "",
+      contactPhone: row.contactPhone || "",
+      contactEmail: row.contactEmail || "",
+    }));
 
-    const rows = await HospitalProfile.find(query).sort({ availableBeds: -1, name: 1 });
-    res.status(200).json({ hospitals: rows.map((row) => formatHospital(row)) });
+    res.status(200).json({ hospitals });
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch hospitals", error: error.message });
   }
@@ -1000,6 +1078,33 @@ export async function assignDestinationHospital(req, res) {
     });
 
     await incident.save();
+
+    const hospitalRecord = await resolveHospitalRecord(hospital);
+    if (hospitalRecord) {
+      await upsertIncomingAlert({
+        incident,
+        hospitalRecord,
+        message: `Destination set: ${hospital.name}`,
+      });
+
+      if (global.notificationService) {
+        await global.notificationService.send({
+          type: "hospital",
+          priority: "high",
+          title: "Incoming Transfer Assigned",
+          message: `Dispatcher assigned a destination hospital for incident ${incident.incidentCode}`,
+          details: `Hospital: ${hospital.name}`,
+          recipients: [
+            hospitalRecord.userId
+              ? { role: "hospital", userId: hospitalRecord.userId }
+              : { role: "hospital", targetType: "hospital", targetId: hospitalRecord._id },
+          ],
+          relatedEmergency: incident._id,
+          relatedHospital: hospitalRecord._id,
+        });
+      }
+    }
+
     const payload = formatIncident(incident);
     emitDispatcherEvent("dispatcher:hospital:assigned", payload);
     res.status(200).json(payload);
@@ -1038,19 +1143,26 @@ export async function notifyHospital(req, res) {
     if (!incident) return res.status(404).json({ message: "Incident not found" });
 
     let resolvedHospital = null;
+    let resolvedHospitalRecord = null;
     if (hospitalProfileId && isObjectId(hospitalProfileId)) {
       resolvedHospital = await HospitalProfile.findById(hospitalProfileId);
     } else if (hospitalId && isObjectId(hospitalId)) {
       resolvedHospital = await HospitalProfile.findOne({ userId: hospitalId });
       if (!resolvedHospital) {
-        const user = await User.findOne({ _id: hospitalId, role: "medical" }).lean();
-        if (user) {
-          incident.notifiedHospital = {
-            hospitalId: user._id.toString(),
-            hospitalName: user.name,
-            message: message || "",
-            notifiedAt: new Date(),
-          };
+        resolvedHospitalRecord = await Hospital.findOne({ userId: hospitalId });
+        if (!resolvedHospitalRecord) {
+          resolvedHospitalRecord = await Hospital.findById(hospitalId);
+        }
+        if (!resolvedHospitalRecord) {
+          const user = await User.findOne({ _id: hospitalId, role: { $in: ["hospital", "medical"] } }).lean();
+          if (user) {
+            incident.notifiedHospital = {
+              hospitalId: user._id.toString(),
+              hospitalName: user.name,
+              message: message || "",
+              notifiedAt: new Date(),
+            };
+          }
         }
       }
     }
@@ -1059,6 +1171,13 @@ export async function notifyHospital(req, res) {
       incident.notifiedHospital = {
         hospitalId: resolvedHospital._id.toString(),
         hospitalName: resolvedHospital.name,
+        message: message || "",
+        notifiedAt: new Date(),
+      };
+    } else if (resolvedHospitalRecord) {
+      incident.notifiedHospital = {
+        hospitalId: resolvedHospitalRecord._id.toString(),
+        hospitalName: resolvedHospitalRecord.name,
         message: message || "",
         notifiedAt: new Date(),
       };
@@ -1083,6 +1202,36 @@ export async function notifyHospital(req, res) {
     });
 
     await incident.save();
+
+    let hospitalRecord = resolvedHospitalRecord;
+    if (!hospitalRecord && resolvedHospital) {
+      hospitalRecord = await resolveHospitalRecord(resolvedHospital);
+    }
+
+    if (hospitalRecord) {
+      await upsertIncomingAlert({
+        incident,
+        hospitalRecord,
+        message: incident.notifiedHospital?.message || "",
+      });
+
+      if (global.notificationService) {
+        await global.notificationService.send({
+          type: "hospital",
+          priority: "high",
+          title: "Hospital Notified",
+          message: `Dispatcher notified ${incident.notifiedHospital?.hospitalName || "hospital"}`,
+          details: incident.notifiedHospital?.message || "",
+          recipients: [
+            hospitalRecord.userId
+              ? { role: "hospital", userId: hospitalRecord.userId }
+              : { role: "hospital", targetType: "hospital", targetId: hospitalRecord._id },
+          ],
+          relatedEmergency: incident._id,
+          relatedHospital: hospitalRecord._id,
+        });
+      }
+    }
     const payload = formatIncident(incident);
     emitDispatcherEvent("dispatcher:hospital:notified", payload);
     res.status(200).json(payload);

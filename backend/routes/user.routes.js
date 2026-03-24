@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 const router = express.Router();
 import User from "../models/user.model.js";
 import { createToken } from "../utils/token.js";
+import { requireAuth } from "../middleware/auth.js";
 
 
 
@@ -59,6 +60,7 @@ router.post("/signup", async (req, res) => {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
+        mustResetPassword: newUser.mustResetPassword || false,
       },
     });
 
@@ -100,8 +102,37 @@ router.post("/login", async (req, res) => {
         email: user.email,
         role: user.role,
         ambulanceId: user.ambulanceId || null,
+        mustResetPassword: user.mustResetPassword || false,
       },
     });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.patch("/me/password", requireAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+    if (!newPassword || String(newPassword).length < 6) {
+      return res.status(400).json({ message: "newPassword must be at least 6 characters" });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (!user.mustResetPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: "currentPassword is required" });
+      }
+      const ok = await bcrypt.compare(currentPassword, user.password);
+      if (!ok) return res.status(400).json({ message: "Current password is incorrect" });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.mustResetPassword = false;
+    await user.save();
+
+    res.status(200).json({ message: "Password updated", mustResetPassword: false });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }

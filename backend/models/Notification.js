@@ -104,6 +104,8 @@ notificationSchema.index({ "recipients.acknowledged": 1 });
 notificationSchema.index({ createdAt: -1 });
 notificationSchema.index({ "recipients.userId": 1, "recipients.read": 1, createdAt: -1 });
 
-const Notification = mongoose.model("Notification", notificationSchema);
+const Notification =
+  mongoose.models.Notification ||
+  mongoose.model("Notification", notificationSchema);
 
 export default Notification;

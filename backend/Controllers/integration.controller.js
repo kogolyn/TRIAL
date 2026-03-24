@@ -1,7 +1,7 @@
 // controllers/integration.controller.js - External Service Integration
 const axios = require('axios');
-const Hospital = require('../models/Hospital.model');
-const IncomingAlert = require('../models/IncomingAlert.model');
+const Hospital = require('../models/hospital.model.js');
+const IncomingAlert = require('../models/hospital/IncomingAlert.model.js');
 
 /**
  * Integration with Ambulance Service

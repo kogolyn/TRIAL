@@ -12,6 +12,7 @@ import Analytics     from './pages/Admin/Analytics';
 import SystemLogs          from './pages/Admin/Logs';
 import Tracking             from './pages/Admin/Tracking';
 import Settings             from './pages/Admin/Settings';
+import Resources            from './pages/Admin/Resources';
 
 //  AUTH & EMERGENCY PAGES ─────────────────────────────────────────
 import EmergencyRequest from './pages/Landing/EmergencyRequest';
@@ -152,6 +153,7 @@ function AdminApp() {
     tracking:     { title: 'Live Emergency Tracking',   subtitle: 'Real-time tracking of ambulances and emergencies' },
     registration: { title: 'Registration Portal',       subtitle: 'Register new hospitals and ambulances' },
     verification: { title: 'Verification Center',       subtitle: 'Review and verify pending registrations' },
+    resources:    { title: 'Hospital Resources',        subtitle: 'Manage beds, equipment, and blood bank' },
     analytics:    { title: 'System Analytics',          subtitle: 'Detailed analytics and reports' },
     settings:     { title: 'System Settings',           subtitle: 'Configure system settings and preferences' },
     help:         { title: 'Logs',             subtitle: 'System logs and activity tracking' },
@@ -165,6 +167,7 @@ function AdminApp() {
       case 'dashboard':    return <Dashboard />;
       case 'registration': return <Registration />;
       case 'verification': return <Verification />;
+      case 'resources':    return <Resources />;
       case 'analytics':    return <Analytics />;
       case 'logs':     return <SystemLogs />;
       case 'tracking': return <Tracking />;

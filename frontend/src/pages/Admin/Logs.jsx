@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FileText, Search, Download, Filter, AlertTriangle, CheckCircle,
   XCircle, Info, Activity, RefreshCw, Calendar, User, Clock
 } from 'lucide-react';
+import { api } from "../../lib/api";
 
 const SystemLogs = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -10,7 +11,7 @@ const SystemLogs = () => {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [dateRange, setDateRange] = useState('today');
 
-  const [logs] = useState([
+  const [logs, setLogs] = useState([
     { id: 1, timestamp: '2024-02-17 14:32:15', level: 'info',    category: 'authentication', user: 'admin@emergency.ke', action: 'User logged in', ip: '102.68.75.23', details: 'Successful authentication' },
     { id: 2, timestamp: '2024-02-17 14:30:42', level: 'success', category: 'registration',  user: 'john.k@emergency.ke', action: 'Hospital registered', ip: '102.68.75.24', details: 'Kenyatta National Hospital submitted' },
     { id: 3, timestamp: '2024-02-17 14:28:19', level: 'warning', category: 'verification',  user: 'jane.w@emergency.ke', action: 'Verification attempt failed', ip: '102.68.75.25', details: 'Missing required documents' },
@@ -24,6 +25,38 @@ const SystemLogs = () => {
     { id: 11, timestamp: '2024-02-17 14:05:09', level: 'info',   category: 'tracking',      user: 'system',              action: 'GPS update received', ip: '127.0.0.1', details: 'Ambulance KBZ 123A location updated' },
     { id: 12, timestamp: '2024-02-17 14:02:47', level: 'warning', category: 'system',       user: 'system',              action: 'Disk space low', ip: '127.0.0.1', details: 'Available space: 12GB (15%)' },
   ]);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const data = await api.get("/admin/logs?limit=200");
+        if (!active) return;
+        if (Array.isArray(data) && data.length) {
+          setLogs(
+            data.map((row) => ({
+              id: row.id,
+              timestamp: row.timestamp
+                ? new Date(row.timestamp).toLocaleString("en-US")
+                : "",
+              level: row.level || "info",
+              category: row.category || "system",
+              user: row.user || "system",
+              action: row.action || "System event",
+              ip: row.ip || "-",
+              details: row.details || "",
+            })),
+          );
+        }
+      } catch {
+        // keep defaults
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const levels = ['info', 'success', 'warning', 'error'];
   const categories = ['authentication', 'registration', 'verification', 'emergency', 'api', 'system', 'tracking'];

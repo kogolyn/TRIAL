@@ -8,6 +8,7 @@ import connectDB from "./config/db.js";
 import socketAuth from "./middleware/socketAuth.js";
 import { requireMongo } from "./middleware/Mongoavailability.js";
 import AmbulanceNotificationService from "./services/ambulanceNotificationService.js";
+import NotificationService from "./services/notificationService.js";
 
 import userRoutes from "./routes/user.routes.js";
 import patientCareRoutes from "./routes/patientCareRoutes.js";
@@ -21,6 +22,8 @@ import hospitalLegacyRoutes from "./routes/hospitalRoutes.js";
 import dispatcherRoutes from "./routes/dispatcher.routes.js";
 import emergencyRoutes from "./routes/emergency.js";
 import transferRoutes from "./routes/transferRoutes.js";
+import adminRoutes from "./routes/Admin.routes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -54,6 +57,7 @@ io.on("connection", (socket) => {
 });
 
 global.ambulanceNotificationService = new AmbulanceNotificationService(io);
+global.notificationService = new NotificationService(io);
 global.mongoReady = false;
 
 app.use(cors());
@@ -75,6 +79,8 @@ app.use("/hospital", hospitalLegacyRoutes);
 app.use("/dispatcher", dispatcherRoutes);
 app.use("/api/emergencies", emergencyRoutes);
 app.use("/api/transfers", transferRoutes);
+app.use("/admin", adminRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 async function startServer() {
   try {

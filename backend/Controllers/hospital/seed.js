@@ -4,7 +4,10 @@ import BloodBank from "../../models/hospital/BloodBank.model.js";
 import IncomingAlert from "../../models/hospital/IncomingAlert.model.js";
 import Referral from "../../models/hospital/Referral.model.js";
 
+const ENABLE_SEED = process.env.ENABLE_HOSPITAL_SEED === "false";
+
 export async function ensureAlertsSeed(hospitalId, userId) {
+  if (!ENABLE_SEED) return;
   const existing = await IncomingAlert.countDocuments({ hospitalId });
   if (existing > 0) return;
 
@@ -79,6 +82,7 @@ export async function ensureAlertsSeed(hospitalId, userId) {
 }
 
 export async function ensureResourcesSeed(hospitalId) {
+  if (!ENABLE_SEED) return;
   const bedCount = await Bed.countDocuments({ hospitalId });
   if (bedCount === 0) {
     const defs = [
