@@ -1,11 +1,11 @@
 import express from "express";
 import mongoose from "mongoose";
 import Facility from "../models/ambulance/Facility.mongo.js";
+import Hospital from "../models/hospital.model.js";
+import Registration from "../models/admin/Registration.model.js";
 import IncomingAlert from "../models/hospital/IncomingAlert.model.js";
 
 const router = express.Router();
-
-const MIN_FACILITY_VARIETY = 8;
 
 function toRadians(value) {
   return (value * Math.PI) / 180;
@@ -40,32 +40,52 @@ function normalizeSeverity(rawSeverity) {
   return "moderate";
 }
 
-async function ensureFacilitySeed() {
-  const currentCount = await Facility.countDocuments({ isActive: true });
-  if (currentCount >= MIN_FACILITY_VARIETY) return;
-
-  const defaults = [
-    { name: "Nakuru County Referral Hospital", type: "Level 5 Hospital", latitude: -0.3031, longitude: 36.0800, bedsAvailable: 12, isActive: true },
-    { name: "War Memorial Hospital", type: "General Hospital", latitude: -0.2877, longitude: 36.0695, bedsAvailable: 6, isActive: true },
-    { name: "Avenue Hospital Nakuru", type: "Private Hospital", latitude: -0.2795, longitude: 36.0679, bedsAvailable: 9, isActive: true },
-    { name: "Kijabe Mission Hospital", type: "Specialist Hospital", latitude: -0.9686, longitude: 36.6174, bedsAvailable: 4, isActive: true },
-    { name: "Molo Sub-County Hospital", type: "County Hospital", latitude: -0.2479, longitude: 35.7361, bedsAvailable: 7, isActive: true },
-    { name: "Naivasha District Hospital", type: "District Hospital", latitude: -0.7167, longitude: 36.4333, bedsAvailable: 10, isActive: true },
-    { name: "Gilgil Sub-County Hospital", type: "County Hospital", latitude: -0.4989, longitude: 36.3190, bedsAvailable: 5, isActive: true },
-    { name: "St. Mary's Mission Hospital Gilgil", type: "Mission Hospital", latitude: -0.5041, longitude: 36.3210, bedsAvailable: 3, isActive: true },
-  ];
-
-  for (const entry of defaults) {
-    const exists = await Facility.findOne({ name: entry.name });
-    if (!exists) {
-      await Facility.create(entry);
+function parseGps(gps) {
+  const raw = String(gps || "").trim();
+  const match = raw.match(/-?\d+(\.\d+)?/g);
+  if (match && match.length >= 2) {
+    const lat = Number(match[0]);
+    const lng = Number(match[1]);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return { lat, lng };
     }
+  }
+  return { lat: -0.3031, lng: 36.08 };
+}
+
+async function ensureFacilitiesFromAdmin() {
+  const registrations = await Registration.find({ type: "hospital", status: "approved" }).lean();
+  if (!registrations.length) return;
+
+  const hospitals = await Hospital.find().select("_id name userId capacityAvailable").lean();
+  const hospitalByName = new Map(hospitals.map((row) => [row.name, row]));
+
+  for (const reg of registrations) {
+    const hospitalReg = reg.hospital || {};
+    const hospitalRow = hospitalByName.get(hospitalReg.facilityName);
+    const { lat, lng } = parseGps(hospitalReg.gps);
+    const bedsAvailable = Number(hospitalRow?.capacityAvailable ?? hospitalReg.totalBeds ?? 0) || 0;
+
+    await Facility.findOneAndUpdate(
+      { name: hospitalReg.facilityName },
+      {
+        name: hospitalReg.facilityName || "Hospital",
+        type: hospitalReg.facilityType || "Hospital",
+        hospitalUserId: hospitalRow?.userId || null,
+        latitude: lat,
+        longitude: lng,
+        address: hospitalReg.address || hospitalReg.county || "",
+        bedsAvailable,
+        isActive: true,
+      },
+      { upsert: true, new: true },
+    );
   }
 }
 
 router.get("/api/facilities/nearby", async (req, res) => {
   try {
-    await ensureFacilitySeed();
+    await ensureFacilitiesFromAdmin();
     const lat = Number(req.query.lat);
     const lng = Number(req.query.lng);
     const radius = Number(req.query.radius || 10);
@@ -96,7 +116,7 @@ router.get("/api/facilities/nearby", async (req, res) => {
 
 router.get("/api/facilities/available", async (req, res) => {
   try {
-    await ensureFacilitySeed();
+    await ensureFacilitiesFromAdmin();
     const facilities = await Facility.find({ isActive: true }).sort({ bedsAvailable: -1 });
     return res.json(facilities.filter((f) => Number(f.bedsAvailable || 0) > 0));
   } catch (error) {
