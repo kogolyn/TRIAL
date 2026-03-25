@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Ambulance from "../../models/dispatcher/Ambulance.model.js";
 import Incident from "../../models/dispatcher/Incident.model.js";
 import Hospital from "../../models/hospital.model.js";
@@ -704,5 +705,35 @@ export async function rejectRegistration(req, res) {
     res.status(200).json(record);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+}
+
+export async function resetUserPassword(req, res) {
+  try {
+    const identifier = String(req.params.id || "").trim();
+    const query = mongoose.isValidObjectId(identifier)
+      ? { _id: identifier }
+      : { email: identifier.toLowerCase() };
+    const user = await User.findOne(query);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const tempPassword = generateTempPassword();
+    const password = await bcrypt.hash(tempPassword, 10);
+    user.password = password;
+    user.mustResetPassword = true;
+    await user.save();
+
+    return res.status(200).json({
+      user: {
+        id: user._id.toString(),
+        email: user.email,
+        role: user.role,
+      },
+      tempPassword,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 }

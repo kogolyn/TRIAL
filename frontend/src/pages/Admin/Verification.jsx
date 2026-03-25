@@ -6,6 +6,7 @@ import {
   XCircle,
   Clock,
   Eye,
+  RotateCw,
   Search,
   Download,
   AlertCircle,
@@ -17,6 +18,8 @@ const Verification = () => {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [credentials, setCredentials] = useState(null);
+  const [actionError, setActionError] = useState('');
+  const [actionMessage, setActionMessage] = useState('');
 
   const [registrations, setRegistrations] = useState([
     { id: 1, type: 'hospital', name: 'Kenyatta National Hospital', location: 'Nairobi CBD', capacity: 1800, status: 'pending', dateSubmitted: '2024-02-08', contact: '+254 712 345 678' },
@@ -45,6 +48,7 @@ const Verification = () => {
                 status: row.status,
                 dateSubmitted: row.createdAt ? new Date(row.createdAt).toISOString().slice(0, 10) : "",
                 contact: row.hospital?.contactPhone || "",
+                email: row.hospital?.contactEmail || "",
               };
             }
             return {
@@ -56,6 +60,7 @@ const Verification = () => {
               dateSubmitted: row.createdAt ? new Date(row.createdAt).toISOString().slice(0, 10) : "",
               operator: row.ambulance?.operatorName || "",
               contact: row.ambulance?.contactPhone || "",
+              email: row.ambulance?.contactEmail || "",
             };
           }),
         );
@@ -71,6 +76,8 @@ const Verification = () => {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
+      setActionError('');
+      setActionMessage('');
       if (newStatus === "approved") {
         const res = await api.patch(`/admin/registrations/${id}/approve`, {});
         if (res?.tempPassword && res?.createdUser?.email) {
@@ -78,13 +85,40 @@ const Verification = () => {
             email: res.createdUser.email,
             password: res.tempPassword,
           });
+          setActionMessage("Approval complete. Temp credentials generated.");
+        } else {
+          setActionMessage("Approval complete. No temp password generated (user may already exist).");
         }
       } else if (newStatus === "rejected") {
         await api.patch(`/admin/registrations/${id}/reject`, { reason: "Rejected by admin" });
+        setActionMessage("Registration rejected.");
       }
       fetchRegistrations();
     } catch {
-      // no-op
+      setActionError("Action failed. Please try again.");
+    }
+  };
+
+  const handleResetPassword = async (email) => {
+    setActionError('');
+    setActionMessage('');
+    if (!email) {
+      setActionError("No contact email on this registration. Add one and approve again.");
+      return;
+    }
+    try {
+      const res = await api.patch(`/admin/users/${encodeURIComponent(email)}/reset-password`, {});
+      if (res?.tempPassword && res?.user?.email) {
+        setCredentials({
+          email: res.user.email,
+          password: res.tempPassword,
+        });
+        setActionMessage("Temp password generated. Share it with the user.");
+      } else {
+        setActionError("Reset failed. User not found.");
+      }
+    } catch {
+      setActionError("Reset failed. Please check the server logs.");
     }
   };
 
@@ -159,6 +193,16 @@ const Verification = () => {
         <SummaryCard label="Approved" value={counts.approved} color="bg-green-500" onClick={() => setSelectedFilter('approved')} active={selectedFilter === 'approved'} />
         <SummaryCard label="Rejected" value={counts.rejected} color="bg-red-500" onClick={() => setSelectedFilter('rejected')} active={selectedFilter === 'rejected'} />
       </div>
+      {actionMessage && (
+        <div className="rounded-lg border border-green-200 bg-green-50 text-green-700 px-4 py-3 text-sm">
+          {actionMessage}
+        </div>
+      )}
+      {actionError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">
+          {actionError}
+        </div>
+      )}
 
       {/* Filters and Search */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
@@ -287,6 +331,15 @@ const Verification = () => {
                               <XCircle className="w-4 h-4 text-gray-600 group-hover:text-red-600" />
                             </button>
                           </>
+                        )}
+                        {reg.status === 'approved' && reg.email && (
+                          <button
+                            onClick={() => handleResetPassword(reg.email)}
+                            className="p-2 hover:bg-amber-50 rounded-lg transition-colors group"
+                            title="Reset Password"
+                          >
+                            <RotateCw className="w-4 h-4 text-gray-600 group-hover:text-amber-600" />
+                          </button>
                         )}
                       </div>
                     </td>

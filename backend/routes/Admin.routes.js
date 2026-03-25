@@ -13,6 +13,7 @@ import {
   approveRegistration,
   rejectRegistration,
   updateHospitalResources,
+  resetUserPassword,
 } from "../Controllers/admin/admin.controller.js";
 
 const router = express.Router();
@@ -29,5 +30,6 @@ router.get("/registrations", requireAuth, requireRole("admin"), getRegistrations
 router.patch("/registrations/:id/approve", requireAuth, requireRole("admin"), approveRegistration);
 router.patch("/registrations/:id/reject", requireAuth, requireRole("admin"), rejectRegistration);
 router.patch("/hospitals/:id/resources", requireAuth, requireRole("admin"), updateHospitalResources);
+router.patch("/users/:id/reset-password", requireAuth, requireRole("admin"), resetUserPassword);
 
 export default router;

@@ -13,15 +13,15 @@ function AmbulanceDashboard() {
     [],
   );
   const ambulanceId = useMemo(() => {
-    const fromUser = storedUser?.ambulanceId || storedUser?.ambulance?.id || storedUser?.id;
-    if (typeof fromUser === "string" && fromUser.trim().toUpperCase().startsWith("AMB-")) {
+    const fromUser = storedUser?.ambulanceId || storedUser?.ambulance?.id || null;
+    if (typeof fromUser === "string" && fromUser.trim()) {
       return fromUser.trim().toUpperCase();
     }
-    return "AMB-04";
+    return "";
   }, [storedUser]);
 
   const [ambulance, setAmbulance] = useState({
-    id: ambulanceId,
+    id: ambulanceId || "UNASSIGNED",
     status: "Active Duty",
     currentSpeed: 0,
     lat: -0.2827,
@@ -194,6 +194,11 @@ function AmbulanceDashboard() {
   }, [ambulance.lat, ambulance.lng, mapFacility]);
 
   useEffect(() => {
+    if (!ambulanceId) {
+      setError("No ambulance assigned to this account. Please login as a registered ambulance user.");
+      return;
+    }
+
     const loadDashboardData = async () => {
       try {
         const [status, messages, incidentData] = await Promise.all([
@@ -284,6 +289,7 @@ function AmbulanceDashboard() {
   }, []);
 
   useEffect(() => {
+    if (!ambulanceId) return;
     apiRequest(`/api/ambulance/${ambulanceId}/location`, {
       method: "PUT",
       body: JSON.stringify({
@@ -531,6 +537,12 @@ function AmbulanceDashboard() {
       )}
 
       <div className="grid lg:grid-cols-[3fr_1fr] gap-6 p-6 flex-1 relative z-0">
+        {!ambulanceId && (
+          <div className="lg:col-span-2 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 px-4 py-3 text-sm">
+            This account is not linked to an ambulance unit yet. Ask admin to approve the ambulance registration so your
+            login gets an ambulanceId.
+          </div>
+        )}
         <div className="flex flex-col gap-6">
           <div className="rounded-xl border border-gray-300 overflow-hidden shadow-lg flex-1 flex flex-col bg-white">
             <div className="px-6 py-4 border-b border-gray-300 flex justify-between items-center bg-gray-50">
