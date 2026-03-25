@@ -188,7 +188,7 @@ export const updateEmergency = async (req, res) => {
       const incident = await Incident.findByIdAndUpdate(
         emergency.dispatcherIncidentId,
         { status: incidentStatus },
-        { new: true }
+        { returnDocument: "after" }
       );
 
       if (incident) {

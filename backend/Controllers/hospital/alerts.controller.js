@@ -43,7 +43,7 @@ export async function confirmRoom(req, res) {
     const row = await IncomingAlert.findOneAndUpdate(
       { _id: req.params.id, hospitalId: req.user.id },
       { roomAssigned: room || undefined, status: "prepared" },
-      { new: true },
+      { returnDocument: "after" },
     );
     if (!row) return res.status(404).json({ message: "Alert not found" });
     res.status(200).json(formatAlert(row));
@@ -59,7 +59,7 @@ export async function reassignRoom(req, res) {
     const row = await IncomingAlert.findOneAndUpdate(
       { _id: req.params.id, hospitalId: req.user.id },
       { roomAssigned: room, status: "acknowledged" },
-      { new: true },
+      { returnDocument: "after" },
     );
     if (!row) return res.status(404).json({ message: "Alert not found" });
     res.status(200).json(formatAlert(row));
@@ -73,7 +73,7 @@ export async function pageTeam(req, res) {
     const row = await IncomingAlert.findOneAndUpdate(
       { _id: req.params.id, hospitalId: req.user.id },
       { teamNotified: true, status: "acknowledged" },
-      { new: true },
+      { returnDocument: "after" },
     );
     if (!row) return res.status(404).json({ message: "Alert not found" });
     res.status(200).json(formatAlert(row));

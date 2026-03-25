@@ -64,7 +64,7 @@ export async function acceptIncomingReferral(req, res) {
     const row = await Referral.findOneAndUpdate(
       { _id: req.params.id, createdBy: req.user.id, direction: "incoming" },
       { status: "accepted" },
-      { new: true },
+      { returnDocument: "after" },
     );
     if (!row) return res.status(404).json({ message: "Referral not found" });
     res.status(200).json(formatReferral(row));
@@ -78,7 +78,7 @@ export async function rejectIncomingReferral(req, res) {
     const row = await Referral.findOneAndUpdate(
       { _id: req.params.id, createdBy: req.user.id, direction: "incoming" },
       { status: "rejected" },
-      { new: true },
+      { returnDocument: "after" },
     );
     if (!row) return res.status(404).json({ message: "Referral not found" });
     res.status(200).json(formatReferral(row));

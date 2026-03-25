@@ -269,7 +269,7 @@ async function upsertIncomingAlert({ incident, hospitalRecord, message = "" }) {
   return IncomingAlert.findOneAndUpdate(
     { hospitalId: targetHospitalId, sourceIncidentId: incident._id },
     { $set: payload },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   );
 }
 
@@ -959,7 +959,11 @@ export async function createOrUpdateHospitalProfile(req, res) {
 
     let row;
     if (userId && isObjectId(userId)) {
-      row = await HospitalProfile.findOneAndUpdate({ userId }, { ...next, userId }, { new: true, upsert: true });
+      row = await HospitalProfile.findOneAndUpdate(
+        { userId },
+        { ...next, userId },
+        { upsert: true, returnDocument: "after" },
+      );
     } else {
       row = await HospitalProfile.create(next);
     }

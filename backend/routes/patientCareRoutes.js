@@ -64,7 +64,7 @@ async function syncIncomingAlertFromPatientCare(patientCare) {
       status: { $ne: "cancelled" },
     },
     { $set: update },
-    { sort: { createdAt: -1 }, new: true },
+    { sort: { createdAt: -1 }, returnDocument: "after" },
   );
 
   if (existing) return;
@@ -127,7 +127,7 @@ router.get("/api/patient-care/:incidentId", async (req, res) => {
 router.put("/api/patient-care/:id", async (req, res) => {
   try {
     const patientCare = await PatientCare.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     });
     if (!patientCare) {
@@ -153,7 +153,7 @@ router.delete("/api/patient-care/:id", async (req, res) => {
     const patientCare = await PatientCare.findByIdAndUpdate(
       req.params.id,
       { status: "cancelled" },
-      { new: true },
+      { returnDocument: "after" },
     );
     if (!patientCare) {
       return res.status(404).json({ message: "Patient care record not found" });

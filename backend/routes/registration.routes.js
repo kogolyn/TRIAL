@@ -162,7 +162,7 @@ router.patch('/:type/:id/approve', async (req, res) => {
     const registration = await Model.findByIdAndUpdate(
       id,
       { verificationStatus: 'approved', verified: true },
-      { new: true }
+      { returnDocument: "after" }
     );
     
     res.json({
@@ -187,7 +187,7 @@ router.patch('/:type/:id/reject', async (req, res) => {
     const registration = await Model.findByIdAndUpdate(
       id,
       { verificationStatus: 'rejected' },
-      { new: true }
+      { returnDocument: "after" }
     );
     
     res.json({

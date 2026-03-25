@@ -630,7 +630,7 @@ export async function approveRegistration(req, res) {
             bedsAvailable,
             isActive: true,
           },
-          { new: true, upsert: true },
+          { upsert: true, returnDocument: "after" },
         );
       }
     }
